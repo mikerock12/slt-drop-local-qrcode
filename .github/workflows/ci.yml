@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # WinForms e o instalador (Inno Setup) só existem no Windows.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Testes
+        run: dotnet test SltDropLocal.slnx -c Release --nologo
+
+      - name: Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup -y --no-progress
+          }
+
+      - name: Publicação e instalador
+        shell: pwsh
+        run: ./scripts/gerar-instalador.ps1 -PularTestes
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: instalador
+          path: |
+            entrega/*.exe
+            entrega/*.sha256
+          if-no-files-found: error

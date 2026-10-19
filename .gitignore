@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+
+# Saída do scripts\gerar-instalador.ps1
+publish/
+entrega/

@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>SltDropLocal.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Kestrel: servidor HTTP que atende a rede local sem exigir reserva de
+         URL (netsh urlacl) nem privilégio de administrador para abrir a porta. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="QRCoder" Version="1.8.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Web\pagina.html" LogicalName="SltDropLocal.pagina.html" />
+    <EmbeddedResource Include="Web\aviso.html" LogicalName="SltDropLocal.aviso.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SltDropLocal.Tests" />
+  </ItemGroup>
+
+</Project>
