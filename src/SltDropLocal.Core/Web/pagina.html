@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#121316">
+<title>Enviar para o PC · SLT Drop Local QRCode</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --fundo: #121316; --cartao: #1c1d21; --borda: #2c2d33; --texto: #f2f2f3; --suave: #b4b4bb;
+    --laranja: #ff7a1a; --laranja-escuro: #e0610a; --verde: #3ecf7a; --vermelho: #ff5a5f; --amarelo: #f5c542;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--fundo); color: var(--texto);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
+  }
+  .pagina { max-width: 640px; margin: 0 auto; padding: 16px 16px 120px; }
+  header { display: flex; align-items: center; gap: 12px; padding: 4px 0 18px; }
+  header svg { width: 44px; height: 44px; flex: none; }
+  header h1 { font-size: 1.05rem; margin: 0; line-height: 1.2; }
+  header p { margin: 2px 0 0; color: var(--suave); font-size: .88rem; overflow-wrap: anywhere; }
+  header b { color: var(--texto); font-weight: 600; }
+
+  .escolher {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; min-height: 132px; padding: 20px; border: 2px dashed #ff7a1a88; border-radius: 18px;
+    background: #ff7a1a10; color: var(--texto); cursor: pointer; text-align: center;
+  }
+  .escolher:active, .escolher.sobre { background: #ff7a1a22; border-color: var(--laranja); }
+  .escolher strong { font-size: 1.15rem; }
+  .escolher span { color: var(--suave); font-size: .9rem; }
+  .escolher svg { width: 34px; height: 34px; color: var(--laranja); }
+  input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .dica { color: var(--suave); font-size: .85rem; margin: 10px 2px 18px; }
+
+  .resumo { background: var(--cartao); border: 1px solid var(--borda); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
+  .resumo .topo { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .resumo .pct { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .resumo .det { color: var(--suave); font-size: .88rem; font-variant-numeric: tabular-nums; }
+  .botoes { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+  button {
+    font: inherit; font-size: .9rem; font-weight: 600; border-radius: 10px; padding: 9px 14px; min-height: 40px;
+    border: 1px solid var(--borda); background: #26272d; color: var(--texto); cursor: pointer;
+  }
+  button:active { transform: translateY(1px); }
+  button.perigo { color: #ffb3b5; border-color: #5a2a2d; background: #2a1c1e; }
+  button.primario { background: var(--laranja); border-color: var(--laranja); color: #1a0d02; }
+  button[hidden] { display: none; }
+
+  .barra { height: 8px; border-radius: 99px; background: #2a2b31; overflow: hidden; margin-top: 8px; }
+  .barra i { display: block; height: 100%; width: 0; background: var(--laranja); border-radius: inherit; transition: width .25s linear; }
+
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .item { background: var(--cartao); border: 1px solid var(--borda); border-radius: 14px; padding: 12px 12px 10px; }
+  .item .l1 { display: flex; gap: 10px; align-items: baseline; }
+  .item .nome { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .ipct { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .item .l2 { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; }
+  .item .det { color: var(--suave); font-size: .84rem; font-variant-numeric: tabular-nums; flex: 1 1 200px; }
+  .item .acoes { display: flex; gap: 6px; }
+  .item .acoes button { padding: 6px 12px; min-height: 36px; font-size: .84rem; }
+  .item[data-st=concluido] .barra i { background: var(--verde); }
+  .item[data-st=pausado] .barra i { background: var(--amarelo); }
+  .item[data-st=erro] .barra i, .item[data-st=cancelado] .barra i { background: var(--vermelho); }
+  .item[data-st=cancelado] { opacity: .6; }
+  .selo { font-size: .78rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: #2a2b31; color: var(--suave); }
+  .item[data-st=concluido] .selo { background: #173826; color: var(--verde); }
+  .item[data-st=erro] .selo { background: #3a1d1f; color: #ffb3b5; }
+  .item[data-st=pausado] .selo { background: #3a3218; color: var(--amarelo); }
+
+  footer {
+    position: fixed; left: 0; right: 0; bottom: 0; background: #121316f2; border-top: 1px solid var(--borda);
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(6px);
+  }
+  footer .dentro { max-width: 640px; margin: 0 auto; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+  footer p { margin: 0; color: var(--suave); font-size: .82rem; font-variant-numeric: tabular-nums; }
+
+  .fim { min-height: 70vh; display: grid; place-items: center; text-align: center; padding: 24px 8px; }
+  .fim h2 { margin: 16px 0 8px; font-size: 1.35rem; }
+  .fim p { margin: 0 auto; color: var(--suave); max-width: 380px; }
+  .fim svg { width: 64px; height: 64px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <header>
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="2" y="2" width="60" height="60" rx="14" fill="#1c1d21" stroke="#ff7a1a" stroke-width="2"/>
+      <rect x="13" y="13" width="14" height="14" rx="3" fill="none" stroke="#f2f2f3" stroke-width="3"/>
+      <rect x="37" y="13" width="14" height="14" rx="3" fill="none" stroke="#f2f2f3" stroke-width="3"/>
+      <rect x="13" y="37" width="14" height="14" rx="3" fill="none" stroke="#f2f2f3" stroke-width="3"/>
+      <path d="M44 35v14m-6-6 6 6 6-6" fill="none" stroke="#ff7a1a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <h1>SLT Drop Local QRCode</h1>
+      <p id="destino">Conectando ao PC…</p>
+    </div>
+  </header>
+
+  <main id="principal">
+    <label class="escolher" id="zona" for="arquivos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+      <strong>Escolher arquivos</strong>
+      <span>Fotos, vídeos, documentos — qualquer tipo e tamanho</span>
+    </label>
+    <input type="file" id="arquivos" multiple>
+    <p class="dica">Deixe esta tela aberta até terminar: alguns celulares pausam o envio quando a tela apaga ou você troca de aplicativo.</p>
+
+    <section class="resumo" id="resumo" hidden aria-live="polite">
+      <div class="topo">
+        <span class="pct" id="rPct">0%</span>
+        <span class="det" id="rQtd"></span>
+      </div>
+      <div class="barra"><i id="rBarra"></i></div>
+      <p class="det" id="rDet" style="margin:8px 0 0"></p>
+      <div class="botoes">
+        <button type="button" id="pausarTudo">Pausar tudo</button>
+        <button type="button" id="retomarTudo" hidden>Retomar tudo</button>
+        <button type="button" class="perigo" id="cancelarTudo">Cancelar tudo</button>
+      </div>
+    </section>
+
+    <ul id="lista"></ul>
+  </main>
+
+  <section class="fim" id="fim" hidden>
+    <div>
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="29" fill="#1c1d21" stroke="#ff7a1a" stroke-width="2"/>
+        <path d="M21 33l8 8 15-17" fill="none" stroke="#f2f2f3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h2 id="fimTitulo">Sessão encerrada</h2>
+      <p id="fimTexto"></p>
+    </div>
+  </section>
+</div>
+
+<footer id="rodape">
+  <div class="dentro">
+    <p id="expira">Sessão ativa</p>
+    <button type="button" class="perigo" id="encerrar">Encerrar sessão</button>
+  </div>
+</footer>
+
+<template id="modeloItem">
+  <li class="item">
+    <div class="l1"><span class="nome"></span><span class="ipct">0%</span></div>
+    <div class="barra"><i></i></div>
+    <div class="l2">
+      <span class="det"></span>
+      <span class="acoes">
+        <span class="selo"></span>
+        <button type="button" data-acao="pausar">Pausar</button>
+        <button type="button" data-acao="retomar" hidden>Retomar</button>
+        <button type="button" data-acao="cancelar" class="perigo">Cancelar</button>
+      </span>
+    </div>
+  </li>
+</template>
+
+<script>
+'use strict';
+(() => {
+  const TOKEN = location.pathname.split('/').filter(Boolean)[1] || '';
+  const API = '/s/' + encodeURIComponent(TOKEN) + '/api';
+  const $ = id => document.getElementById(id);
+  const ATIVOS = ['fila', 'enviando', 'pausado', 'erro'];
+
+  let BLOCO = 8 * 1024 * 1024;
+  let sessaoAtiva = true;
+  let bombeando = false;
+  const itens = [];
+
+  // ---------- formatação ----------
+  const num = (v, casas) => v.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
+  function bytes(n) {
+    if (n < 1024) return n + ' B';
+    const u = ['KB', 'MB', 'GB', 'TB'];
+    let v = n / 1024, i = 0;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return num(v, v < 10 ? 1 : 0) + ' ' + u[i];
+  }
+  function tempo(s) {
+    s = Math.max(0, Math.round(s));
+    if (s < 60) return s + ' s';
+    if (s < 3600) return Math.floor(s / 60) + ' min ' + String(s % 60).padStart(2, '0') + ' s';
+    return Math.floor(s / 3600) + ' h ' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') + ' min';
+  }
+  const relogio = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+
+  // ---------- velocidade (média dos últimos ~6 s) ----------
+  let enviadoTotal = 0;
+  const amostras = [];
+  let velocidade = 0;
+  setInterval(() => {
+    const agora = performance.now();
+    amostras.push({ t: agora, b: enviadoTotal });
+    while (amostras.length > 2 && agora - amostras[0].t > 6000) amostras.shift();
+    const a = amostras[0], z = amostras[amostras.length - 1];
+    velocidade = z.t > a.t ? (z.b - a.b) / ((z.t - a.t) / 1000) : 0;
+    agendar();
+  }, 500);
+
+  // ---------- API ----------
+  class SessaoPerdida extends Error {}
+  const MOTIVOS_SESSAO = { 410: 'expirada', 403: 'outro-aparelho' };
+
+  async function api(metodo, caminho, corpo) {
+    const r = await fetch(API + caminho, {
+      method: metodo, cache: 'no-store',
+      headers: corpo ? { 'Content-Type': 'application/json' } : undefined,
+      body: corpo ? JSON.stringify(corpo) : undefined,
+    });
+    let j = {};
+    try { j = await r.json(); } catch { /* sem corpo */ }
+    verificarSessao(r.status, j);
+    return { status: r.status, j };
+  }
+
+  function verificarSessao(status, j) {
+    const erro = j && j.erro;
+    if (erro === 'expirada' || erro === 'invalida' || erro === 'outro-aparelho' || (MOTIVOS_SESSAO[status] && !erro)) {
+      sessaoPerdida(erro || MOTIVOS_SESSAO[status]);
+      throw new SessaoPerdida(erro);
+    }
+  }
+
+  function putBloco(item, blob, posicao) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      item.xhr = xhr;
+      let ultimo = 0;
+      xhr.open('PUT', API + '/envios/' + item.id + '?posicao=' + posicao);
+      xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+      xhr.upload.onprogress = e => {
+        enviadoTotal += e.loaded - ultimo;
+        ultimo = e.loaded;
+        item.emVoo = e.loaded;
+        agendar();
+      };
+      xhr.onload = () => {
+        item.xhr = null;
+        let j = {};
+        try { j = JSON.parse(xhr.responseText); } catch { /* sem corpo */ }
+        resolve({ status: xhr.status, j });
+      };
+      xhr.onerror = () => { item.xhr = null; reject(new Error('rede')); };
+      xhr.onabort = () => { item.xhr = null; reject(new Error('abortado')); };
+      xhr.send(blob);
+    });
+  }
+
+  const esperar = ms => new Promise(r => setTimeout(r, ms));
+
+  // ---------- fila ----------
+  function adicionar(lista) {
+    if (!sessaoAtiva) return;
+    for (const file of lista) {
+      const el = $('modeloItem').content.firstElementChild.cloneNode(true);
+      const item = { file, id: null, recebido: 0, emVoo: 0, st: 'fila', xhr: null, el, erro: '', nomeFinal: '', tentativas: 0, reconectando: false };
+      el.querySelector('.nome').textContent = file.name;
+      el.querySelector('.nome').title = file.name;
+      el.querySelector('[data-acao=pausar]').onclick = () => pausar(item);
+      el.querySelector('[data-acao=retomar]').onclick = () => retomar(item);
+      el.querySelector('[data-acao=cancelar]').onclick = () => cancelar(item);
+      itens.push(item);
+      $('lista').appendChild(el);
+    }
+    $('resumo').hidden = itens.length === 0;
+    agendar();
+    bombear();
+  }
+
+  async function bombear() {
+    if (bombeando) return;
+    bombeando = true;
+    try {
+      let proximo;
+      while (sessaoAtiva && (proximo = itens.find(i => i.st === 'fila'))) await enviar(proximo);
+    } finally {
+      bombeando = false;
+      agendar();
+    }
+  }
+
+  async function enviar(item) {
+    item.st = 'enviando';
+    item.tentativas = 0;
+    agendar();
+    try {
+      if (!item.id) {
+        const r = await api('POST', '/envios', { nome: item.file.name, tamanho: item.file.size });
+        if (r.status === 507) return falhar(item, r.j.erro === 'sem-espaco' ? 'Espaço insuficiente no PC (livre: ' + bytes(r.j.livre || 0) + ').' : 'O PC não conseguiu gravar o arquivo.');
+        if (r.status !== 200) return falhar(item, 'O PC recusou o arquivo (' + r.status + ').');
+        item.id = r.j.id;
+        item.recebido = r.j.recebido;
+        // Cancelado enquanto o PC ainda criava o envio: avisa o PC para apagar.
+        if (item.st === 'cancelado') { api('DELETE', '/envios/' + item.id).catch(() => {}); return; }
+        if (r.j.concluido) return concluir(item, r.j.nomeFinal);
+      } else {
+        const r = await api('GET', '/envios/' + item.id);
+        if (r.status === 404) { item.id = null; item.recebido = 0; item.st = 'fila'; return; }
+        item.recebido = r.j.recebido;
+        if (r.j.concluido) return concluir(item, r.j.nomeFinal);
+      }
+
+      while (item.st === 'enviando' && item.recebido < item.file.size) {
+        const fim = Math.min(item.file.size, item.recebido + BLOCO);
+        let r;
+        try {
+          r = await putBloco(item, item.file.slice(item.recebido, fim), item.recebido);
+        } catch {
+          item.emVoo = 0;
+          if (item.st !== 'enviando' || !sessaoAtiva) return;
+          // A rede oscilou: espera um pouco, pergunta ao PC até onde chegou e continua de lá.
+          if (++item.tentativas > 15) return falhar(item, 'A conexão com o PC caiu. Confira se o celular continua no mesmo Wi-Fi.');
+          item.reconectando = true;
+          agendar();
+          await esperar(Math.min(1000 * item.tentativas, 8000));
+          if (item.st !== 'enviando') return;
+          try {
+            const c = await api('GET', '/envios/' + item.id);
+            if (c.status === 200) {
+              item.recebido = c.j.recebido;
+              if (c.j.concluido) return concluir(item, c.j.nomeFinal);
+            }
+          } catch (e) { if (e instanceof SessaoPerdida) return; }
+          continue;
+        }
+        item.emVoo = 0;
+        verificarSessao(r.status, r.j);
+        if (r.status === 200) {
+          item.tentativas = 0;
+          item.reconectando = false;
+          item.recebido = r.j.recebido;
+          if (r.j.concluido) return concluir(item, r.j.nomeFinal);
+          continue;
+        }
+        if (r.status === 409) {
+          if (r.j.erro === 'cancelado') { item.st = 'cancelado'; return; }
+          item.recebido = r.j.recebido;
+          if (r.j.erro === 'ocupado') await esperar(600);
+          continue;
+        }
+        if (r.status === 400 && r.j.erro === 'interrompido') { item.recebido = r.j.recebido; continue; }
+        if (r.status === 507) return falhar(item, r.j.erro === 'sem-espaco' ? 'Espaço insuficiente no PC.' : 'O PC não conseguiu gravar: ' + (r.j.mensagem || 'erro no disco') + '.');
+        return falhar(item, 'Erro inesperado do PC (' + r.status + ').');
+      }
+    } catch (e) {
+      if (e instanceof SessaoPerdida) return;
+      if (item.st === 'enviando') falhar(item, 'Não foi possível falar com o PC.');
+    } finally {
+      item.reconectando = false;
+      agendar();
+    }
+  }
+
+  function concluir(item, nome) {
+    item.st = 'concluido';
+    item.recebido = item.file.size;
+    item.nomeFinal = nome || item.file.name;
+  }
+
+  function falhar(item, msg) {
+    item.st = 'erro';
+    item.erro = msg;
+  }
+
+  function pausar(item) {
+    if (item.st === 'enviando') {
+      item.st = 'pausado';
+      if (item.xhr) item.xhr.abort();
+      if (item.id) api('POST', '/envios/' + item.id + '/pausa').catch(() => {});
+    } else if (item.st === 'fila') {
+      item.st = 'pausado';
+    }
+    agendar();
+  }
+
+  function retomar(item) {
+    if (!sessaoAtiva || (item.st !== 'pausado' && item.st !== 'erro')) return;
+    item.st = 'fila';
+    item.erro = '';
+    agendar();
+    bombear();
+  }
+
+  function cancelar(item) {
+    if (!ATIVOS.includes(item.st)) return;
+    item.st = 'cancelado';
+    if (item.xhr) item.xhr.abort();
+    if (item.id) api('DELETE', '/envios/' + item.id).catch(() => {});
+    agendar();
+  }
+
+  $('pausarTudo').onclick = () => itens.forEach(pausar);
+  $('retomarTudo').onclick = () => itens.forEach(retomar);
+  $('cancelarTudo').onclick = () => {
+    const n = itens.filter(i => ATIVOS.includes(i.st)).length;
+    if (n && confirm('Cancelar ' + n + (n === 1 ? ' envio' : ' envios') + '? O que já chegou desses arquivos será apagado do PC.')) itens.forEach(cancelar);
+  };
+
+  // ---------- sessão ----------
+  let segundosRestantes = null;
+
+  async function consultarEstado() {
+    if (!sessaoAtiva) return;
+    try {
+      const r = await api('GET', '/estado');
+      if (r.status !== 200) return;
+      segundosRestantes = r.j.segundosRestantes;
+      if (r.j.tamanhoBloco) BLOCO = r.j.tamanhoBloco;
+      const d = $('destino');
+      d.textContent = '';
+      d.append('Enviando para ', Object.assign(document.createElement('b'), { textContent: r.j.nomePc }),
+        ' · pasta ', Object.assign(document.createElement('b'), { textContent: r.j.pasta }));
+      agendar();
+    } catch (e) {
+      if (!(e instanceof SessaoPerdida)) $('expira').textContent = 'Sem resposta do PC… tentando de novo';
+    }
+  }
+  consultarEstado();
+  setInterval(consultarEstado, 5000);
+  setInterval(() => { if (segundosRestantes > 0) segundosRestantes--; agendar(); }, 1000);
+
+  function sessaoPerdida(motivo) {
+    if (!sessaoAtiva) return;
+    sessaoAtiva = false;
+    for (const i of itens) {
+      if (i.xhr) i.xhr.abort();
+      if (ATIVOS.includes(i.st)) i.st = 'cancelado';
+    }
+    const textos = {
+      'expirada': ['Sessão encerrada', 'Esta sessão expirou (15 minutos sem atividade) ou foi encerrada no PC. O que não terminou de enviar foi descartado. Para continuar, escaneie o QR Code novo na tela do PC.'],
+      'outro-aparelho': ['Sessão em uso', 'Este QR Code já está sendo usado por outro aparelho. No PC, gere um QR Code novo.'],
+      'invalida': ['Link inválido', 'Este link não é de uma sessão válida. Escaneie o QR Code que está na tela do PC.'],
+    };
+    mostrarFim(...(textos[motivo] || textos.expirada));
+  }
+
+  function mostrarFim(titulo, texto) {
+    $('principal').hidden = true;
+    $('rodape').hidden = true;
+    $('fim').hidden = false;
+    $('fimTitulo').textContent = titulo;
+    $('fimTexto').textContent = texto;
+  }
+
+  $('encerrar').onclick = async () => {
+    const pendentes = itens.filter(i => ATIVOS.includes(i.st)).length;
+    if (pendentes && !confirm('Há ' + pendentes + (pendentes === 1 ? ' envio não concluído' : ' envios não concluídos') + '. Encerrar mesmo assim? O que não terminou será descartado.')) return;
+    const concluidos = itens.filter(i => i.st === 'concluido').length;
+    for (const i of itens) { if (i.xhr) i.xhr.abort(); if (ATIVOS.includes(i.st)) i.st = 'cancelado'; }
+    try { await api('POST', '/encerrar'); } catch { /* a sessão já tinha acabado */ }
+    if (!sessaoAtiva) return;
+    sessaoAtiva = false;
+    mostrarFim('Sessão encerrada',
+      (concluidos ? (concluidos === 1 ? '1 arquivo foi salvo' : concluidos + ' arquivos foram salvos') + ' no PC. ' : '') +
+      'Este link não funciona mais. Para enviar outros arquivos, escaneie o QR Code novo na tela do PC.');
+  };
+
+  // ---------- seleção e arrastar ----------
+  $('arquivos').addEventListener('change', e => { adicionar([...e.target.files]); e.target.value = ''; });
+  const zona = $('zona');
+  addEventListener('dragover', e => { e.preventDefault(); zona.classList.add('sobre'); });
+  addEventListener('dragleave', e => { if (!e.relatedTarget) zona.classList.remove('sobre'); });
+  addEventListener('drop', e => {
+    e.preventDefault();
+    zona.classList.remove('sobre');
+    if (e.dataTransfer && e.dataTransfer.files.length) adicionar([...e.dataTransfer.files]);
+  });
+  addEventListener('beforeunload', e => {
+    if (sessaoAtiva && itens.some(i => i.st === 'enviando' || i.st === 'fila')) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  // ---------- desenho ----------
+  let agendado = false;
+  function agendar() {
+    if (agendado) return;
+    agendado = true;
+    const quadro = () => { agendado = false; desenhar(); };
+    // Com a aba em segundo plano o navegador congela o requestAnimationFrame; o
+    // timer garante que porcentagem e situação continuem certas mesmo assim.
+    if (document.hidden) setTimeout(quadro, 250); else requestAnimationFrame(quadro);
+  }
+  document.addEventListener('visibilitychange', () => { agendado = false; agendar(); });
+
+  const SELOS = { fila: 'Na fila', enviando: '', pausado: 'Pausado', concluido: 'Concluído', cancelado: 'Cancelado', erro: 'Falhou' };
+
+  function desenhar() {
+    const enviandoAgora = itens.some(i => i.st === 'enviando');
+    let total = 0, feito = 0, restanteAtivo = 0, concluidos = 0, validos = 0;
+
+    for (const i of itens) {
+      const tam = i.file.size;
+      const atual = Math.min(tam, i.recebido + i.emVoo);
+      const pct = tam ? Math.floor(atual / tam * 100) : (i.st === 'concluido' ? 100 : 0);
+      if (i.st !== 'cancelado') {
+        validos++;
+        total += tam;
+        feito += atual;
+        if (i.st === 'fila' || i.st === 'enviando') restanteAtivo += tam - atual;
+      }
+      if (i.st === 'concluido') concluidos++;
+
+      const el = i.el;
+      el.dataset.st = i.st;
+      el.querySelector('.ipct').textContent = (i.st === 'concluido' ? 100 : pct) + '%';
+      el.querySelector('.barra i').style.width = (i.st === 'concluido' ? 100 : pct) + '%';
+
+      let det;
+      if (i.st === 'enviando') {
+        det = bytes(atual) + ' de ' + bytes(tam);
+        if (i.reconectando) det += ' · reconectando…';
+        else if (velocidade > 0) det += ' · ' + bytes(velocidade) + '/s · ≈ ' + tempo((tam - atual) / velocidade);
+      } else if (i.st === 'concluido') {
+        det = bytes(tam) + (i.nomeFinal && i.nomeFinal !== i.file.name ? ' · salvo como ' + i.nomeFinal : ' · salvo no PC');
+      } else if (i.st === 'erro') {
+        det = i.erro;
+      } else if (i.st === 'cancelado') {
+        det = 'Cancelado';
+      } else {
+        det = bytes(atual) + ' de ' + bytes(tam);
+      }
+      el.querySelector('.det').textContent = det;
+      el.querySelector('.selo').textContent = SELOS[i.st];
+      el.querySelector('.selo').hidden = !SELOS[i.st] || i.st === 'pausado' || i.st === 'fila';
+      el.querySelector('[data-acao=pausar]').hidden = !(i.st === 'enviando' || i.st === 'fila');
+      el.querySelector('[data-acao=retomar]').hidden = !(i.st === 'pausado' || i.st === 'erro');
+      el.querySelector('[data-acao=retomar]').textContent = i.st === 'erro' ? 'Tentar de novo' : 'Retomar';
+      el.querySelector('[data-acao=cancelar]').hidden = !ATIVOS.includes(i.st);
+    }
+
+    const pctTotal = total ? Math.floor(feito / total * 100) : (validos && concluidos === validos ? 100 : 0);
+    $('rPct').textContent = pctTotal + '%';
+    $('rBarra').style.width = pctTotal + '%';
+    $('rQtd').textContent = concluidos + ' de ' + validos + (validos === 1 ? ' arquivo' : ' arquivos');
+
+    let det = bytes(feito) + ' de ' + bytes(total);
+    if (enviandoAgora && velocidade > 0) det += ' · ' + bytes(velocidade) + '/s · ≈ ' + tempo(restanteAtivo / velocidade) + ' restantes';
+    else if (validos && concluidos === validos) det += ' · tudo enviado';
+    else if (itens.some(i => i.st === 'pausado') && !enviandoAgora) det += ' · pausado';
+    $('rDet').textContent = det;
+
+    const temPausaveis = itens.some(i => i.st === 'enviando' || i.st === 'fila');
+    const temRetomaveis = itens.some(i => i.st === 'pausado' || i.st === 'erro');
+    $('pausarTudo').hidden = !temPausaveis;
+    $('retomarTudo').hidden = !temRetomaveis;
+    $('cancelarTudo').hidden = !itens.some(i => ATIVOS.includes(i.st));
+
+    if (sessaoAtiva && segundosRestantes !== null) {
+      $('expira').textContent = enviandoAgora
+        ? 'Sessão ativa · enviando'
+        : 'Sem atividade, a sessão encerra em ' + relogio(segundosRestantes);
+    }
+  }
+})();
+</script>
+</body>
+</html>

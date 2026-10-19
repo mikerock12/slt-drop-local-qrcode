@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SltDropLocal.App/SltDropLocal.App.csproj" />
+    <Project Path="src/SltDropLocal.Core/SltDropLocal.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SltDropLocal.Tests/SltDropLocal.Tests.csproj" />
+  </Folder>
+</Solution>

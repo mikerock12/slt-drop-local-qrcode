@@ -1,0 +1,30 @@
+SLT Drop Local QRCode
+Smells Like Tech
+
+Envie arquivos do celular para este PC pela rede Wi-Fi/LAN, sem cabo, sem
+internet e sem instalar nada no celular.
+
+COMO USAR
+1. Abra o SLT Drop Local QRCode e escolha a pasta onde os arquivos vão ficar.
+2. Conecte o celular ao mesmo Wi-Fi (ou roteador) do PC.
+3. Aponte a câmera do celular para o QR Code da tela e toque no link.
+4. Toque em "Escolher arquivos". Acompanhe a porcentagem e o tempo estimado;
+   cada arquivo pode ser pausado, retomado ou cancelado.
+5. Ao terminar, toque em "Encerrar sessão". O PC gera outro QR Code na hora.
+
+SEGURANÇA
+- Cada QR Code tem um código exclusivo e vale para uma sessão só. Encerrada a
+  sessão (pelo botão do celular, pelo botão do PC ou depois de 15 minutos sem
+  atividade), aquele link nunca mais funciona.
+- A sessão fica presa ao primeiro celular que abrir o link.
+- Nada passa pela internet: o envio vai direto do celular para o PC.
+- O que não terminou de enviar quando a sessão acaba é apagado do PC.
+
+SE O CELULAR NÃO ABRIR O LINK
+- Confira se os dois estão na mesma rede. Redes de "convidados" costumam
+  isolar os aparelhos entre si.
+- Desligue os dados móveis do celular e tente de novo.
+- Na janela do programa, em "Rede usada no QR Code", escolha a placa de rede
+  que está ligada ao roteador do celular.
+- O instalador cria a regra "SLT Drop Local QRCode" no Firewall do Windows. Se
+  outro antivírus/firewall estiver ativo, libere o programa nele.
