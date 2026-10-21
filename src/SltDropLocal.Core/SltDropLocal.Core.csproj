@@ -15,6 +15,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Web\pagina.html" LogicalName="SltDropLocal.pagina.html" />
     <EmbeddedResource Include="Web\aviso.html" LogicalName="SltDropLocal.aviso.html" />
+    <EmbeddedResource Include="Web\vendor\jsQR.js" LogicalName="SltDropLocal.jsQR.js" />
   </ItemGroup>
 
   <ItemGroup>

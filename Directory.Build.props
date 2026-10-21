@@ -2,9 +2,9 @@
   <!-- A versão sai daqui e de nenhum outro lugar: o instalador e o rodapé do
        aplicativo leem este valor. -->
   <PropertyGroup>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
     <Company>Smells Like Tech</Company>
     <Product>SLT Drop Local QRCode</Product>
     <Copyright>Copyright © 2026 Smells Like Tech</Copyright>

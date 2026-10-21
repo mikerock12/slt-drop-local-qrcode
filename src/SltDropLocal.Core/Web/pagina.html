@@ -2,166 +2,365 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#121316">
+<meta name="theme-color" content="#121316" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f6f8" media="(prefers-color-scheme: light)">
+<meta name="format-detection" content="telephone=no">
 <title>Enviar para o PC · SLT Drop Local QRCode</title>
 <style>
   :root {
-    color-scheme: dark;
-    --fundo: #121316; --cartao: #1c1d21; --borda: #2c2d33; --texto: #f2f2f3; --suave: #b4b4bb;
-    --laranja: #ff7a1a; --laranja-escuro: #e0610a; --verde: #3ecf7a; --vermelho: #ff5a5f; --amarelo: #f5c542;
+    color-scheme: dark light;
+    --fundo: #121316; --cartao: #1c1d21; --cartao2: #24252b; --borda: #2e2f36; --texto: #f2f2f3; --suave: #a9a9b2;
+    --laranja: #ff7a1a; --laranja-texto: #1a0d02; --laranja-fundo: #ff7a1a1c;
+    --verde: #3ecf7a; --verde-fundo: #3ecf7a22; --vermelho: #ff5a5f; --vermelho-fundo: #ff5a5f1f; --amarelo: #f5c542; --amarelo-fundo: #f5c54222;
+    --trilho: #2b2c33; --sombra: 0 -8px 30px #0008;
   }
-  * { box-sizing: border-box; }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --fundo: #f6f6f8; --cartao: #ffffff; --cartao2: #f0f0f3; --borda: #e2e2e8; --texto: #18181b; --suave: #5f5f6b;
+      --laranja: #f26a07; --laranja-texto: #ffffff; --laranja-fundo: #f26a0714;
+      --verde: #13914a; --verde-fundo: #13914a18; --vermelho: #d63339; --vermelho-fundo: #d6333914; --amarelo: #a77a00; --amarelo-fundo: #e8b10020;
+      --trilho: #e7e7ec; --sombra: 0 -6px 24px #0000001a;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; }
   body {
     background: var(--fundo); color: var(--texto);
     font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    min-height: 100dvh;
   }
-  .pagina { max-width: 640px; margin: 0 auto; padding: 16px 16px 120px; }
-  header { display: flex; align-items: center; gap: 12px; padding: 4px 0 18px; }
-  header svg { width: 44px; height: 44px; flex: none; }
-  header h1 { font-size: 1.05rem; margin: 0; line-height: 1.2; }
-  header p { margin: 2px 0 0; color: var(--suave); font-size: .88rem; overflow-wrap: anywhere; }
-  header b { color: var(--texto); font-weight: 600; }
-
-  .escolher {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-    width: 100%; min-height: 132px; padding: 20px; border: 2px dashed #ff7a1a88; border-radius: 18px;
-    background: #ff7a1a10; color: var(--texto); cursor: pointer; text-align: center;
-  }
-  .escolher:active, .escolher.sobre { background: #ff7a1a22; border-color: var(--laranja); }
-  .escolher strong { font-size: 1.15rem; }
-  .escolher span { color: var(--suave); font-size: .9rem; }
-  .escolher svg { width: 34px; height: 34px; color: var(--laranja); }
-  input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-  .dica { color: var(--suave); font-size: .85rem; margin: 10px 2px 18px; }
-
-  .resumo { background: var(--cartao); border: 1px solid var(--borda); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
-  .resumo .topo { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-  .resumo .pct { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .resumo .det { color: var(--suave); font-size: .88rem; font-variant-numeric: tabular-nums; }
-  .botoes { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-
-  button {
-    font: inherit; font-size: .9rem; font-weight: 600; border-radius: 10px; padding: 9px 14px; min-height: 40px;
-    border: 1px solid var(--borda); background: #26272d; color: var(--texto); cursor: pointer;
-  }
-  button:active { transform: translateY(1px); }
-  button.perigo { color: #ffb3b5; border-color: #5a2a2d; background: #2a1c1e; }
-  button.primario { background: var(--laranja); border-color: var(--laranja); color: #1a0d02; }
-  button[hidden] { display: none; }
-
-  .barra { height: 8px; border-radius: 99px; background: #2a2b31; overflow: hidden; margin-top: 8px; }
-  .barra i { display: block; height: 100%; width: 0; background: var(--laranja); border-radius: inherit; transition: width .25s linear; }
-
-  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-  .item { background: var(--cartao); border: 1px solid var(--borda); border-radius: 14px; padding: 12px 12px 10px; }
-  .item .l1 { display: flex; gap: 10px; align-items: baseline; }
-  .item .nome { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .item .ipct { font-variant-numeric: tabular-nums; font-weight: 700; }
-  .item .l2 { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; }
-  .item .det { color: var(--suave); font-size: .84rem; font-variant-numeric: tabular-nums; flex: 1 1 200px; }
-  .item .acoes { display: flex; gap: 6px; }
-  .item .acoes button { padding: 6px 12px; min-height: 36px; font-size: .84rem; }
-  .item[data-st=concluido] .barra i { background: var(--verde); }
-  .item[data-st=pausado] .barra i { background: var(--amarelo); }
-  .item[data-st=erro] .barra i, .item[data-st=cancelado] .barra i { background: var(--vermelho); }
-  .item[data-st=cancelado] { opacity: .6; }
-  .selo { font-size: .78rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: #2a2b31; color: var(--suave); }
-  .item[data-st=concluido] .selo { background: #173826; color: var(--verde); }
-  .item[data-st=erro] .selo { background: #3a1d1f; color: #ffb3b5; }
-  .item[data-st=pausado] .selo { background: #3a3218; color: var(--amarelo); }
-
-  footer {
-    position: fixed; left: 0; right: 0; bottom: 0; background: #121316f2; border-top: 1px solid var(--borda);
-    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-    backdrop-filter: blur(6px);
-  }
-  footer .dentro { max-width: 640px; margin: 0 auto; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
-  footer p { margin: 0; color: var(--suave); font-size: .82rem; font-variant-numeric: tabular-nums; }
-
-  .fim { min-height: 70vh; display: grid; place-items: center; text-align: center; padding: 24px 8px; }
-  .fim h2 { margin: 16px 0 8px; font-size: 1.35rem; }
-  .fim p { margin: 0 auto; color: var(--suave); max-width: 380px; }
-  .fim svg { width: 64px; height: 64px; }
   [hidden] { display: none !important; }
+  svg.ic { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+  button:focus-visible, .escolha:focus-within { outline: 3px solid var(--laranja); outline-offset: 2px; }
+  button:active { transform: scale(.97); }
+
+  .tela { max-width: 560px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+
+  /* ---------- cabeçalho ---------- */
+  header { display: flex; align-items: center; gap: 12px; padding: 4px 0 16px; }
+  .marca { width: 42px; height: 42px; flex: none; }
+  header h1 { font-size: 1rem; margin: 0; line-height: 1.2; }
+  header p { margin: 2px 0 0; color: var(--suave); font-size: .85rem; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  header p span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+  header p svg.ic { width: 15px; height: 15px; }
+  header b { color: var(--texto); font-weight: 600; overflow-wrap: anywhere; }
+
+  /* ---------- carregando ---------- */
+  .carregando { min-height: 80dvh; display: grid; place-items: center; color: var(--suave); }
+  .giro { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--trilho); border-top-color: var(--laranja); animation: giro .9s linear infinite; margin: 0 auto 12px; }
+  @keyframes giro { to { transform: rotate(360deg); } }
+
+  /* ---------- código de acesso ---------- */
+  .codigo { min-height: calc(100dvh - 32px); display: flex; flex-direction: column; justify-content: center; text-align: center; padding-bottom: 8vh; }
+  .codigo .marca { width: 64px; height: 64px; margin: 0 auto 18px; }
+  .codigo h2 { font-size: 1.45rem; margin: 0 0 8px; }
+  .codigo > p { margin: 0 auto 26px; color: var(--suave); max-width: 320px; }
+  .casas { position: relative; display: flex; justify-content: center; gap: 5px; margin: 0 auto; border-radius: 14px; }
+  .casas .casa {
+    width: 38px; height: 54px; border-radius: 11px; border: 2px solid var(--borda); background: var(--cartao);
+    display: grid; place-items: center; font: 700 1.45rem/1 ui-monospace, "Cascadia Mono", Consolas, "Roboto Mono", monospace;
+  }
+  .casas .casa.atual { border-color: var(--laranja); box-shadow: 0 0 0 4px var(--laranja-fundo); }
+  .casas .casa.meio { margin-right: 9px; }
+  .casas input {
+    position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px;
+    border: 0; background: transparent; color: transparent; caret-color: transparent;
+  }
+  .casas.erro { animation: tremer .4s; }
+  .casas.erro .casa { border-color: var(--vermelho); }
+  @keyframes tremer { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+  .msg-codigo { min-height: 1.5em; margin: 14px 0 0; font-size: .92rem; color: var(--vermelho); }
+  .primario {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 52px; padding: 0 22px; border-radius: 14px; font-weight: 700; font-size: 1rem;
+    background: var(--laranja); color: var(--laranja-texto);
+  }
+  .primario:disabled { opacity: .45; }
+  .codigo .primario, .codigo .secundario { width: 100%; max-width: 340px; margin: 18px auto 0; }
+  .secundario {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 18px;
+    border-radius: 14px; font-weight: 650; background: var(--cartao); border: 1.5px solid var(--borda); cursor: pointer;
+  }
+  .codigo .secundario { margin-top: 10px; }
+  .codigo .dica-qr { color: var(--suave); font-size: .82rem; margin: 8px auto 0; max-width: 320px; }
+  .ou { display: flex; align-items: center; gap: 10px; color: var(--suave); font-size: .8rem; max-width: 340px; margin: 18px auto 0; }
+  .ou::before, .ou::after { content: ""; flex: 1; height: 1px; background: var(--borda); }
+  .seguro { display: inline-flex; gap: 6px; align-items: center; justify-content: center; color: var(--suave); font-size: .8rem; margin-top: 22px; }
+  .seguro svg.ic { width: 16px; height: 16px; }
+
+  /* ---------- escolher arquivos ---------- */
+  .escolhas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .escolha {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    min-height: 116px; padding: 14px 10px; border-radius: 18px; text-align: center; cursor: pointer;
+    background: var(--cartao); border: 1.5px solid var(--borda); font-weight: 650;
+  }
+  .escolha.destaque { background: var(--laranja); border-color: var(--laranja); color: var(--laranja-texto); }
+  .escolha small { font-weight: 450; font-size: .8rem; opacity: .8; }
+  .escolha svg.ic { width: 30px; height: 30px; }
+  .escolha:active { transform: scale(.98); }
+  .escolha input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  body.arrastando .escolhas { outline: 3px dashed var(--laranja); outline-offset: 6px; border-radius: 20px; }
+
+  .faixa {
+    display: flex; gap: 10px; align-items: center; margin: 14px 0 0; padding: 10px 12px; border-radius: 12px;
+    background: var(--amarelo-fundo); color: var(--texto); font-size: .86rem;
+  }
+  .faixa svg.ic { color: var(--amarelo); width: 20px; height: 20px; }
+
+  .vazio { text-align: center; color: var(--suave); padding: 34px 12px 8px; font-size: .92rem; }
+  .vazio svg.ic { width: 40px; height: 40px; opacity: .5; display: block; margin: 0 auto 10px; }
+
+  .topo-lista { display: flex; justify-content: space-between; align-items: center; margin: 22px 2px 10px; }
+  .topo-lista h2 { font-size: .95rem; margin: 0; }
+  .link { color: var(--laranja); font-weight: 600; font-size: .88rem; padding: 8px 4px; min-height: 40px; }
+
+  /* ---------- lista ---------- */
+  ul.lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .item { display: flex; gap: 12px; align-items: center; background: var(--cartao); border: 1px solid var(--borda); border-radius: 16px; padding: 10px 8px 10px 10px; }
+  .mini {
+    position: relative; width: 52px; height: 52px; flex: none; border-radius: 12px; overflow: hidden;
+    background: var(--cartao2); display: grid; place-items: center; color: var(--suave);
+  }
+  .mini img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .mini .ext { position: absolute; bottom: 3px; left: 0; right: 0; text-align: center; font-size: .58rem; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; }
+  .mini:has(.ext:not(:empty)) svg.ic { transform: translateY(-5px); }
+  .info { flex: 1; min-width: 0; }
+  .nome { font-weight: 600; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .barra { height: 6px; border-radius: 99px; background: var(--trilho); overflow: hidden; margin: 7px 0 5px; }
+  .barra i { display: block; height: 100%; width: 0; background: var(--laranja); border-radius: inherit; transition: width .25s linear; }
+  .det { display: flex; justify-content: space-between; gap: 8px; color: var(--suave); font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .det .d1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .det .pct { font-weight: 700; color: var(--texto); }
+  .acoes { display: flex; flex: none; }
+  .ib { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--suave); }
+  .ib:active { background: var(--cartao2); }
+  .ib.cancelar { color: var(--vermelho); }
+  .selo { width: 44px; height: 44px; display: grid; place-items: center; }
+  .item[data-st=concluido] .barra i { background: var(--verde); }
+  .item[data-st=concluido] .selo { color: var(--verde); }
+  .item[data-st=pausado] .barra i { background: var(--amarelo); }
+  .item[data-st=pausado] .d1 { color: var(--amarelo); font-weight: 600; }
+  .item[data-st=erro] .barra i, .item[data-st=cancelado] .barra i { background: var(--vermelho); }
+  .item[data-st=erro] .d1 { color: var(--vermelho); white-space: normal; }
+  .item[data-st=cancelado] { opacity: .55; }
+  .item[data-st=concluido] .d1 { color: var(--verde); }
+
+  /* ---------- painel inferior ---------- */
+  .espaco { height: 190px; }
+  .painel {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    background: var(--cartao); border-top: 1px solid var(--borda); box-shadow: var(--sombra);
+    border-radius: 20px 20px 0 0; padding: 14px 16px calc(10px + env(safe-area-inset-bottom));
+  }
+  .painel .dentro { max-width: 560px; margin: 0 auto; }
+  .total { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .total .pct { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+  .total .qtd { color: var(--suave); font-size: .85rem; }
+  .painel .barra { height: 8px; margin: 10px 0 6px; }
+  .painel .resumo-det { color: var(--suave); font-size: .84rem; font-variant-numeric: tabular-nums; margin: 0; }
+  .botoes { display: flex; gap: 8px; margin-top: 12px; }
+  .botao {
+    flex: 1; min-height: 46px; border-radius: 12px; font-weight: 650; font-size: .92rem;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--cartao2); border: 1px solid var(--borda);
+  }
+  .botao svg.ic { width: 18px; height: 18px; }
+  .botao.perigo { color: var(--vermelho); }
+  .sessao { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--borda); }
+  .painel.sem-envios .sessao { margin-top: 0; padding-top: 0; border-top: 0; }
+  .sessao p { margin: 0; color: var(--suave); font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .sessao .botao { flex: none; padding: 0 14px; min-height: 42px; }
+
+  /* ---------- fim ---------- */
+  .fim { min-height: calc(100dvh - 32px); display: flex; flex-direction: column; justify-content: center; text-align: center; padding-bottom: 8vh; }
+  .fim .circulo { width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 18px; display: grid; place-items: center; background: var(--laranja-fundo); color: var(--laranja); }
+  .fim .circulo svg.ic { width: 38px; height: 38px; stroke-width: 2.4; }
+  .fim h2 { margin: 0 0 10px; font-size: 1.4rem; }
+  .fim p { margin: 0 auto; color: var(--suave); max-width: 340px; }
+
+  /* ---------- folha de confirmação ---------- */
+  .veu { position: fixed; inset: 0; z-index: 20; background: #0009; display: flex; align-items: flex-end; justify-content: center; animation: surgir .15s ease-out; }
+  .folha {
+    width: 100%; max-width: 560px; background: var(--cartao); border-radius: 22px 22px 0 0;
+    padding: 10px 18px calc(18px + env(safe-area-inset-bottom)); animation: subir .2s ease-out;
+  }
+  .folha .puxador { width: 40px; height: 5px; border-radius: 9px; background: var(--borda); margin: 0 auto 16px; }
+  .folha h3 { margin: 0 0 6px; font-size: 1.15rem; }
+  .folha p { margin: 0 0 18px; color: var(--suave); }
+  .folha .botoes { flex-direction: column; margin: 0; }
+  .folha .botao { flex: none; min-height: 50px; }
+  .folha .botao.confirmar { background: var(--vermelho); border-color: var(--vermelho); color: #fff; }
+  @keyframes surgir { from { opacity: 0; } }
+  @keyframes subir { from { transform: translateY(40px); opacity: .5; } }
+
+  /* ---------- aviso rápido ---------- */
+  .avisos { position: fixed; left: 12px; right: 12px; top: max(12px, env(safe-area-inset-top)); z-index: 30; display: grid; gap: 8px; justify-items: center; pointer-events: none; }
+  .aviso {
+    max-width: 520px; display: flex; gap: 8px; align-items: center; padding: 10px 14px; border-radius: 14px;
+    background: var(--cartao); border: 1px solid var(--borda); box-shadow: 0 8px 24px #0005; font-size: .88rem; font-weight: 550;
+    animation: descer .2s ease-out;
+  }
+  .aviso svg.ic { width: 18px; height: 18px; color: var(--verde); }
+  .aviso.erro svg.ic { color: var(--vermelho); }
+  @keyframes descer { from { transform: translateY(-14px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  @media (max-width: 360px) { .casas { gap: 3px; } .casas .casa { width: 33px; height: 48px; font-size: 1.25rem; } .escolha { min-height: 104px; } }
 </style>
 </head>
 <body>
-<div class="pagina">
-  <header>
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <rect x="2" y="2" width="60" height="60" rx="14" fill="#1c1d21" stroke="#ff7a1a" stroke-width="2"/>
-      <rect x="13" y="13" width="14" height="14" rx="3" fill="none" stroke="#f2f2f3" stroke-width="3"/>
-      <rect x="37" y="13" width="14" height="14" rx="3" fill="none" stroke="#f2f2f3" stroke-width="3"/>
-      <rect x="13" y="37" width="14" height="14" rx="3" fill="none" stroke="#f2f2f3" stroke-width="3"/>
-      <path d="M44 35v14m-6-6 6 6 6-6" fill="none" stroke="#ff7a1a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    <div>
-      <h1>SLT Drop Local QRCode</h1>
-      <p id="destino">Conectando ao PC…</p>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="marca" viewBox="0 0 64 64">
+    <rect x="2" y="2" width="60" height="60" rx="14" fill="#1c1d21" stroke="#ff7a1a" stroke-width="2"/>
+    <rect x="13" y="13" width="14" height="14" rx="3" fill="none" stroke="#f2f2f3" stroke-width="3"/>
+    <rect x="37" y="13" width="14" height="14" rx="3" fill="none" stroke="#f2f2f3" stroke-width="3"/>
+    <rect x="13" y="37" width="14" height="14" rx="3" fill="none" stroke="#f2f2f3" stroke-width="3"/>
+    <path d="M44 35v14m-6-6 6 6 6-6" fill="none" stroke="#ff7a1a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-foto" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="5" width="15" height="14" rx="3"/><path d="m17 10 5-3v10l-5-3"/></symbol>
+  <symbol id="i-audio" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-zip" viewBox="0 0 24 24"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><rect x="1" y="3" width="22" height="5" rx="1"/><path d="M10 12h4"/></symbol>
+  <symbol id="i-arquivo" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-pausa" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 17h.01"/></symbol>
+  <symbol id="i-repetir" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/></symbol>
+  <symbol id="i-pc" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+  <symbol id="i-pasta" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-cadeado" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-enviar" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="4"/></symbol>
+  <symbol id="i-sair" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+</svg>
+
+<!-- Carregando -->
+<div class="tela carregando" id="telaCarregando">
+  <div><div class="giro"></div>Conectando ao PC…</div>
+</div>
+
+<!-- Código de acesso -->
+<main class="tela codigo" id="telaCodigo" hidden>
+  <svg class="marca" aria-hidden="true"><use href="#marca"/></svg>
+  <h2>Digite o código de acesso</h2>
+  <p>São 8 caracteres na tela do PC, abaixo do QR Code. Maiúsculas e minúsculas fazem diferença.</p>
+  <form id="formCodigo" autocomplete="off" novalidate>
+    <div class="casas" id="casas">
+      <span class="casa"></span><span class="casa"></span><span class="casa"></span><span class="casa meio"></span>
+      <span class="casa"></span><span class="casa"></span><span class="casa"></span><span class="casa"></span>
+      <input id="campoCodigo" type="text" inputmode="text" maxlength="9" autocomplete="off"
+             autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go"
+             aria-label="Código de acesso de 8 caracteres" aria-describedby="msgCodigo">
     </div>
-  </header>
-
-  <main id="principal">
-    <label class="escolher" id="zona" for="arquivos">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
-      <strong>Escolher arquivos</strong>
-      <span>Fotos, vídeos, documentos — qualquer tipo e tamanho</span>
+    <p class="msg-codigo" id="msgCodigo" role="alert"></p>
+    <button class="primario" type="submit" id="entrar" disabled>Entrar</button>
+    <div class="ou">ou</div>
+    <label class="secundario" id="lerCamera">
+      <svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg><span id="lerCameraTexto">Ler com a câmera</span>
+      <input type="file" id="fotoCodigo" accept="image/*" capture="environment" hidden>
     </label>
-    <input type="file" id="arquivos" multiple>
-    <p class="dica">Deixe esta tela aberta até terminar: alguns celulares pausam o envio quando a tela apaga ou você troca de aplicativo.</p>
+    <p class="dica-qr">No PC, toque em <b>Mostrar como QR</b> e fotografe o QR do código.</p>
+  </form>
+  <div class="seguro"><svg class="ic" aria-hidden="true"><use href="#i-cadeado"/></svg>Direto para o PC pela rede local, sem internet</div>
+</main>
 
-    <section class="resumo" id="resumo" hidden aria-live="polite">
-      <div class="topo">
-        <span class="pct" id="rPct">0%</span>
-        <span class="det" id="rQtd"></span>
+<!-- Envio -->
+<div id="telaPrincipal" hidden>
+  <div class="tela">
+    <header>
+      <svg class="marca" aria-hidden="true"><use href="#marca"/></svg>
+      <div>
+        <h1>SLT Drop Local QRCode</h1>
+        <p>
+          <span><svg class="ic" aria-hidden="true"><use href="#i-pc"/></svg><b id="nomePc">PC</b></span>
+          <span><svg class="ic" aria-hidden="true"><use href="#i-pasta"/></svg><b id="nomePasta">pasta</b></span>
+        </p>
       </div>
-      <div class="barra"><i id="rBarra"></i></div>
-      <p class="det" id="rDet" style="margin:8px 0 0"></p>
-      <div class="botoes">
-        <button type="button" id="pausarTudo">Pausar tudo</button>
-        <button type="button" id="retomarTudo" hidden>Retomar tudo</button>
-        <button type="button" class="perigo" id="cancelarTudo">Cancelar tudo</button>
+    </header>
+
+    <div class="escolhas">
+      <label class="escolha destaque">
+        <svg class="ic" aria-hidden="true"><use href="#i-foto"/></svg>
+        Fotos e vídeos
+        <small>da galeria ou câmera</small>
+        <input type="file" id="midias" multiple accept="image/*,video/*">
+      </label>
+      <label class="escolha">
+        <svg class="ic" aria-hidden="true"><use href="#i-arquivo"/></svg>
+        Arquivos
+        <small>qualquer tipo e tamanho</small>
+        <input type="file" id="arquivos" multiple>
+      </label>
+    </div>
+
+    <div class="faixa" id="faixaTela" hidden>
+      <svg class="ic" aria-hidden="true"><use href="#i-sol"/></svg>
+      <span>Deixe esta tela aberta até terminar. Se a tela apagar, o envio pausa e continua quando você voltar.</span>
+    </div>
+
+    <div class="vazio" id="vazio">
+      <svg class="ic" aria-hidden="true"><use href="#i-enviar"/></svg>
+      Escolha o que enviar. Os arquivos vão direto para a pasta do PC, sem limite de tamanho.
+    </div>
+
+    <div class="topo-lista" id="topoLista" hidden>
+      <h2>Envios</h2>
+      <button type="button" class="link" id="limpar" hidden>Limpar concluídos</button>
+    </div>
+    <ul class="lista" id="lista"></ul>
+    <div class="espaco"></div>
+  </div>
+
+  <section class="painel sem-envios" id="painel" aria-label="Progresso e sessão">
+    <div class="dentro">
+      <div id="resumo" hidden aria-live="polite">
+        <div class="total"><span class="pct" id="rPct">0%</span><span class="qtd" id="rQtd"></span></div>
+        <div class="barra"><i id="rBarra"></i></div>
+        <p class="resumo-det" id="rDet"></p>
+        <div class="botoes">
+          <button type="button" class="botao" id="pausarTudo"><svg class="ic" aria-hidden="true"><use href="#i-pausa"/></svg>Pausar tudo</button>
+          <button type="button" class="botao" id="retomarTudo" hidden><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Retomar tudo</button>
+          <button type="button" class="botao perigo" id="cancelarTudo"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg>Cancelar tudo</button>
+        </div>
       </div>
-    </section>
-
-    <ul id="lista"></ul>
-  </main>
-
-  <section class="fim" id="fim" hidden>
-    <div>
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="32" cy="32" r="29" fill="#1c1d21" stroke="#ff7a1a" stroke-width="2"/>
-        <path d="M21 33l8 8 15-17" fill="none" stroke="#f2f2f3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <h2 id="fimTitulo">Sessão encerrada</h2>
-      <p id="fimTexto"></p>
+      <div class="sessao">
+        <p id="expira">Sessão ativa</p>
+        <button type="button" class="botao" id="encerrar"><svg class="ic" aria-hidden="true"><use href="#i-sair"/></svg>Encerrar</button>
+      </div>
     </div>
   </section>
 </div>
 
-<footer id="rodape">
-  <div class="dentro">
-    <p id="expira">Sessão ativa</p>
-    <button type="button" class="perigo" id="encerrar">Encerrar sessão</button>
-  </div>
-</footer>
+<!-- Fim -->
+<main class="tela fim" id="telaFim" hidden>
+  <div class="circulo" id="fimIcone"><svg class="ic" aria-hidden="true"><use href="#i-ok"/></svg></div>
+  <h2 id="fimTitulo">Sessão encerrada</h2>
+  <p id="fimTexto"></p>
+</main>
+
+<div class="avisos" id="avisos" aria-live="polite"></div>
 
 <template id="modeloItem">
   <li class="item">
-    <div class="l1"><span class="nome"></span><span class="ipct">0%</span></div>
-    <div class="barra"><i></i></div>
-    <div class="l2">
-      <span class="det"></span>
-      <span class="acoes">
-        <span class="selo"></span>
-        <button type="button" data-acao="pausar">Pausar</button>
-        <button type="button" data-acao="retomar" hidden>Retomar</button>
-        <button type="button" data-acao="cancelar" class="perigo">Cancelar</button>
-      </span>
+    <div class="mini"><svg class="ic" aria-hidden="true"><use href="#i-arquivo"/></svg><span class="ext"></span></div>
+    <div class="info">
+      <div class="nome"></div>
+      <div class="barra"><i></i></div>
+      <div class="det"><span class="d1"></span><span class="pct"></span></div>
+    </div>
+    <div class="acoes">
+      <button type="button" class="ib" data-acao="pausar" aria-label="Pausar"><svg class="ic"><use href="#i-pausa"/></svg></button>
+      <button type="button" class="ib" data-acao="retomar" aria-label="Retomar" hidden><svg class="ic"><use href="#i-play"/></svg></button>
+      <button type="button" class="ib cancelar" data-acao="cancelar" aria-label="Cancelar"><svg class="ic"><use href="#i-x"/></svg></button>
+      <span class="selo" hidden><svg class="ic" aria-label="Concluído"><use href="#i-ok"/></svg></span>
     </div>
   </li>
 </template>
@@ -176,8 +375,14 @@
 
   let BLOCO = 8 * 1024 * 1024;
   let sessaoAtiva = true;
+  let autenticado = false;
   let bombeando = false;
   const itens = [];
+
+  // ---------- telas ----------
+  function mostrarTela(qual) {
+    for (const id of ['telaCarregando', 'telaCodigo', 'telaPrincipal', 'telaFim']) $(id).hidden = id !== qual;
+  }
 
   // ---------- formatação ----------
   const num = (v, casas) => v.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
@@ -195,6 +400,36 @@
     return Math.floor(s / 3600) + ' h ' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') + ' min';
   }
   const relogio = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+  const vibrar = p => { try { navigator.vibrate && navigator.vibrate(p); } catch { /* sem vibração */ } };
+
+  // ---------- avisos e confirmações ----------
+  function avisar(texto, erro) {
+    const el = document.createElement('div');
+    el.className = 'aviso' + (erro ? ' erro' : '');
+    el.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#' + (erro ? 'i-alerta' : 'i-ok') + '"/></svg>';
+    el.append(texto);
+    $('avisos').append(el);
+    setTimeout(() => el.remove(), 2600);
+  }
+
+  function perguntar(titulo, texto, rotulo) {
+    return new Promise(resolve => {
+      const veu = document.createElement('div');
+      veu.className = 'veu';
+      veu.innerHTML = '<div class="folha" role="dialog" aria-modal="true"><div class="puxador"></div><h3></h3><p></p>' +
+        '<div class="botoes"><button type="button" class="botao confirmar"></button><button type="button" class="botao voltar">Voltar</button></div></div>';
+      veu.querySelector('h3').textContent = titulo;
+      veu.querySelector('p').textContent = texto;
+      veu.querySelector('.confirmar').textContent = rotulo;
+      const fechar = r => { veu.remove(); resolve(r); };
+      veu.querySelector('.confirmar').onclick = () => fechar(true);
+      veu.querySelector('.voltar').onclick = () => fechar(false);
+      veu.onclick = e => { if (e.target === veu) fechar(false); };
+      document.body.append(veu);
+      veu.querySelector('.voltar').focus();
+    });
+  }
 
   // ---------- velocidade (média dos últimos ~6 s) ----------
   let enviadoTotal = 0;
@@ -211,11 +446,10 @@
 
   // ---------- API ----------
   class SessaoPerdida extends Error {}
-  const MOTIVOS_SESSAO = { 410: 'expirada', 403: 'outro-aparelho' };
 
   async function api(metodo, caminho, corpo) {
     const r = await fetch(API + caminho, {
-      method: metodo, cache: 'no-store',
+      method: metodo, cache: 'no-store', credentials: 'same-origin',
       headers: corpo ? { 'Content-Type': 'application/json' } : undefined,
       body: corpo ? JSON.stringify(corpo) : undefined,
     });
@@ -227,8 +461,13 @@
 
   function verificarSessao(status, j) {
     const erro = j && j.erro;
-    if (erro === 'expirada' || erro === 'invalida' || erro === 'outro-aparelho' || (MOTIVOS_SESSAO[status] && !erro)) {
-      sessaoPerdida(erro || MOTIVOS_SESSAO[status]);
+    if (erro === 'codigo') {
+      pedirCodigoDeNovo();
+      throw new SessaoPerdida(erro);
+    }
+    if (erro === 'expirada' || erro === 'invalida' || erro === 'outro-aparelho' || erro === 'tentativas' ||
+        (!erro && (status === 410 || status === 403))) {
+      sessaoPerdida(erro || (status === 410 ? 'expirada' : 'outro-aparelho'));
       throw new SessaoPerdida(erro);
     }
   }
@@ -260,21 +499,186 @@
 
   const esperar = ms => new Promise(r => setTimeout(r, ms));
 
-  // ---------- fila ----------
-  function adicionar(lista) {
+  // ---------- código de acesso ----------
+  const campo = $('campoCodigo');
+  const casas = [...document.querySelectorAll('#casas .casa')];
+
+  const TAMANHO = 8;
+  const PREFIXO_QR = 'SLTDROP:';
+  function digitos() { return campo.value.replace(/\s/g, '').slice(0, TAMANHO); }
+
+  function desenharCasas() {
+    const d = digitos();
+    casas.forEach((c, i) => {
+      c.textContent = d[i] || '';
+      c.classList.toggle('atual', i === Math.min(d.length, TAMANHO - 1));
+    });
+    $('entrar').disabled = d.length !== TAMANHO;
+  }
+
+  campo.addEventListener('input', () => {
+    campo.value = digitos();
+    $('casas').classList.remove('erro');
+    desenharCasas();
+    if (campo.value.length === TAMANHO) enviarCodigo();
+  });
+  campo.addEventListener('focus', desenharCasas);
+  campo.addEventListener('blur', desenharCasas);
+  $('formCodigo').addEventListener('submit', e => { e.preventDefault(); enviarCodigo(); });
+
+  let conferindo = false;
+  async function enviarCodigo() {
+    const codigo = digitos();
+    if (codigo.length !== TAMANHO || conferindo) return;
+    conferindo = true;
+    $('entrar').disabled = true;
+    $('entrar').textContent = 'Conferindo…';
+    try {
+      const r = await fetch(API + '/acesso', {
+        method: 'POST', cache: 'no-store', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo }),
+      });
+      let j = {};
+      try { j = await r.json(); } catch { /* sem corpo */ }
+      if (r.ok) {
+        autenticado = true;
+        campo.blur();
+        await consultarEstado();
+        if (sessaoAtiva) { mostrarTela('telaPrincipal'); bombear(); }
+        return;
+      }
+      if (j.erro === 'codigo-incorreto') {
+        vibrar([60, 40, 60]);
+        $('casas').classList.remove('erro');
+        void $('casas').offsetWidth;
+        $('casas').classList.add('erro');
+        $('msgCodigo').textContent = 'Código incorreto. ' + (j.restantes === 1
+          ? 'Última tentativa antes de a sessão ser encerrada.'
+          : 'Restam ' + j.restantes + ' tentativas.');
+        campo.value = '';
+        desenharCasas();
+        campo.focus();
+        return;
+      }
+      verificarSessao(r.status, j);
+      $('msgCodigo').textContent = 'Não foi possível conferir o código (' + r.status + ').';
+    } catch (e) {
+      if (!(e instanceof SessaoPerdida)) $('msgCodigo').textContent = 'Sem resposta do PC. Confira o Wi-Fi e tente de novo.';
+    } finally {
+      conferindo = false;
+      $('entrar').textContent = 'Entrar';
+      desenharCasas();
+    }
+  }
+
+  // ---------- código pela câmera ----------
+  // Câmera ao vivo no navegador exige HTTPS, e esta página é HTTP na rede local.
+  // Por isso a câmera nativa tira uma foto e o jsQR (servido pelo próprio PC) lê o QR nela.
+  let jsQrCarregado = null;
+  function carregarJsQr() {
+    if (!jsQrCarregado) jsQrCarregado = new Promise((ok, falha) => {
+      const sc = document.createElement('script');
+      sc.src = '/recursos/jsqr.js';
+      sc.onload = () => ok(window.jsQR);
+      sc.onerror = () => { jsQrCarregado = null; falha(new Error('jsqr')); };
+      document.head.append(sc);
+    });
+    return jsQrCarregado;
+  }
+
+  async function lerQrDaFoto(arquivo) {
+    const jsQR = await carregarJsQr();
+    const bmp = await createImageBitmap(arquivo);
+    try {
+      const maior = Math.max(bmp.width, bmp.height);
+      // Fotos de celular são enormes; reduzida, a leitura é mais rápida e costuma acertar.
+      for (const lado of [1000, 1600, 700, maior]) {
+        const k = Math.min(1, lado / maior);
+        const w = Math.round(bmp.width * k), h = Math.round(bmp.height * k);
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        const g = cv.getContext('2d', { willReadFrequently: true });
+        g.drawImage(bmp, 0, 0, w, h);
+        const r = jsQR(g.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+        if (r && r.data) return r.data;
+      }
+      return null;
+    } finally {
+      if (bmp.close) bmp.close();
+    }
+  }
+
+  async function usarFotoDoCodigo(arquivo) {
+    $('msgCodigo').textContent = '';
+    $('lerCameraTexto').textContent = 'Lendo o QR…';
+    try {
+      const texto = await lerQrDaFoto(arquivo);
+      if (texto && texto.startsWith(PREFIXO_QR)) {
+        campo.value = texto.slice(PREFIXO_QR.length).replace(/\s/g, '').slice(0, TAMANHO);
+        desenharCasas();
+        await enviarCodigo();
+      } else if (texto && texto.includes('/s/')) {
+        $('msgCodigo').textContent = 'Esse é o QR do link. No PC, toque em "Mostrar como QR" e fotografe o QR do código.';
+      } else {
+        $('msgCodigo').textContent = 'Não encontrei o QR do código na foto. Chegue mais perto da tela do PC e tente de novo.';
+      }
+    } catch {
+      $('msgCodigo').textContent = 'Não foi possível ler a foto. Tente de novo ou digite o código.';
+    } finally {
+      $('lerCameraTexto').textContent = 'Ler com a câmera';
+    }
+  }
+
+  $('fotoCodigo').addEventListener('change', e => {
+    const arquivo = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (arquivo) usarFotoDoCodigo(arquivo);
+  });
+
+  function pedirCodigoDeNovo() {
     if (!sessaoAtiva) return;
+    autenticado = false;
+    for (const i of itens) {
+      if (i.xhr) i.xhr.abort();
+      if (i.st === 'enviando') i.st = 'fila';
+    }
+    $('msgCodigo').textContent = '';
+    campo.value = '';
+    desenharCasas();
+    mostrarTela('telaCodigo');
+    setTimeout(() => campo.focus(), 50);
+  }
+
+  // ---------- fila ----------
+  const TIPOS = [
+    [/^image\//, 'i-foto'], [/^video\//, 'i-video'], [/^audio\//, 'i-audio'],
+    [/zip|rar|7z|tar|gzip|compressed/, 'i-zip'], [/pdf|word|text|sheet|excel|presentation|document/, 'i-doc'],
+  ];
+
+  function adicionar(lista) {
+    if (!sessaoAtiva || !autenticado || !lista.length) return;
     for (const file of lista) {
       const el = $('modeloItem').content.firstElementChild.cloneNode(true);
-      const item = { file, id: null, recebido: 0, emVoo: 0, st: 'fila', xhr: null, el, erro: '', nomeFinal: '', tentativas: 0, reconectando: false };
+      const item = { file, id: null, recebido: 0, emVoo: 0, st: 'fila', xhr: null, el, erro: '', nomeFinal: '', tentativas: 0, reconectando: false, url: null, avisado: false };
       el.querySelector('.nome').textContent = file.name;
-      el.querySelector('.nome').title = file.name;
+      const tipo = (TIPOS.find(([re]) => re.test(file.type || '')) || [, 'i-arquivo'])[1];
+      el.querySelector('.mini use').setAttribute('href', '#' + tipo);
+      const ext = (file.name.match(/\.([a-z0-9]{1,5})$/i) || [, ''])[1];
+      if (tipo !== 'i-foto') el.querySelector('.ext').textContent = ext;
+      if (tipo === 'i-foto' && file.size < 40 * 1024 * 1024) {
+        const img = new Image();
+        img.alt = '';
+        img.decoding = 'async';
+        item.url = img.src = URL.createObjectURL(file);
+        img.onerror = () => { img.remove(); el.querySelector('.ext').textContent = ext; };
+        el.querySelector('.mini').append(img);
+      }
       el.querySelector('[data-acao=pausar]').onclick = () => pausar(item);
       el.querySelector('[data-acao=retomar]').onclick = () => retomar(item);
-      el.querySelector('[data-acao=cancelar]').onclick = () => cancelar(item);
+      el.querySelector('[data-acao=cancelar]').onclick = () => pedirCancelar(item);
       itens.push(item);
-      $('lista').appendChild(el);
+      $('lista').append(el);
     }
-    $('resumo').hidden = itens.length === 0;
     agendar();
     bombear();
   }
@@ -284,7 +688,7 @@
     bombeando = true;
     try {
       let proximo;
-      while (sessaoAtiva && (proximo = itens.find(i => i.st === 'fila'))) await enviar(proximo);
+      while (sessaoAtiva && autenticado && (proximo = itens.find(i => i.st === 'fila'))) await enviar(proximo);
     } finally {
       bombeando = false;
       agendar();
@@ -298,8 +702,8 @@
     try {
       if (!item.id) {
         const r = await api('POST', '/envios', { nome: item.file.name, tamanho: item.file.size });
-        if (r.status === 507) return falhar(item, r.j.erro === 'sem-espaco' ? 'Espaço insuficiente no PC (livre: ' + bytes(r.j.livre || 0) + ').' : 'O PC não conseguiu gravar o arquivo.');
-        if (r.status !== 200) return falhar(item, 'O PC recusou o arquivo (' + r.status + ').');
+        if (r.status === 507) return falhar(item, r.j.erro === 'sem-espaco' ? 'Sem espaço no PC (livre: ' + bytes(r.j.livre || 0) + ')' : 'O PC não conseguiu gravar');
+        if (r.status !== 200) return falhar(item, 'O PC recusou o arquivo (' + r.status + ')');
         item.id = r.j.id;
         item.recebido = r.j.recebido;
         // Cancelado enquanto o PC ainda criava o envio: avisa o PC para apagar.
@@ -351,12 +755,12 @@
           continue;
         }
         if (r.status === 400 && r.j.erro === 'interrompido') { item.recebido = r.j.recebido; continue; }
-        if (r.status === 507) return falhar(item, r.j.erro === 'sem-espaco' ? 'Espaço insuficiente no PC.' : 'O PC não conseguiu gravar: ' + (r.j.mensagem || 'erro no disco') + '.');
-        return falhar(item, 'Erro inesperado do PC (' + r.status + ').');
+        if (r.status === 507) return falhar(item, r.j.erro === 'sem-espaco' ? 'Sem espaço no PC' : 'O PC não conseguiu gravar: ' + (r.j.mensagem || 'erro no disco'));
+        return falhar(item, 'Erro inesperado do PC (' + r.status + ')');
       }
     } catch (e) {
       if (e instanceof SessaoPerdida) return;
-      if (item.st === 'enviando') falhar(item, 'Não foi possível falar com o PC.');
+      if (item.st === 'enviando') falhar(item, 'Não foi possível falar com o PC');
     } finally {
       item.reconectando = false;
       agendar();
@@ -367,11 +771,17 @@
     item.st = 'concluido';
     item.recebido = item.file.size;
     item.nomeFinal = nome || item.file.name;
+    if (!itens.some(i => i.st === 'fila' || i.st === 'enviando')) {
+      const n = itens.filter(i => i.st === 'concluido' && !i.avisado).length;
+      itens.forEach(i => { if (i.st === 'concluido') i.avisado = true; });
+      if (n) { vibrar(120); avisar(n === 1 ? 'Arquivo salvo no PC' : plural(n, 'arquivo salvo', 'arquivos salvos') + ' no PC'); }
+    }
   }
 
   function falhar(item, msg) {
     item.st = 'erro';
     item.erro = msg;
+    avisar(item.file.name + ': ' + msg, true);
   }
 
   function pausar(item) {
@@ -401,11 +811,32 @@
     agendar();
   }
 
+  async function pedirCancelar(item) {
+    // Arquivo pequeno ou que nem começou: cancela direto, sem perguntar.
+    if (item.recebido + item.emVoo < 20 * 1024 * 1024) return cancelar(item);
+    if (await perguntar('Cancelar este envio?', '"' + item.file.name + '" já enviou ' + bytes(item.recebido + item.emVoo) + '. O que chegou será apagado do PC.', 'Cancelar envio'))
+      cancelar(item);
+  }
+
+  function limparConcluidos() {
+    for (let k = itens.length - 1; k >= 0; k--) {
+      const i = itens[k];
+      if (i.st === 'concluido' || i.st === 'cancelado') {
+        if (i.url) URL.revokeObjectURL(i.url);
+        i.el.remove();
+        itens.splice(k, 1);
+      }
+    }
+    agendar();
+  }
+
   $('pausarTudo').onclick = () => itens.forEach(pausar);
   $('retomarTudo').onclick = () => itens.forEach(retomar);
-  $('cancelarTudo').onclick = () => {
+  $('limpar').onclick = limparConcluidos;
+  $('cancelarTudo').onclick = async () => {
     const n = itens.filter(i => ATIVOS.includes(i.st)).length;
-    if (n && confirm('Cancelar ' + n + (n === 1 ? ' envio' : ' envios') + '? O que já chegou desses arquivos será apagado do PC.')) itens.forEach(cancelar);
+    if (n && await perguntar('Cancelar ' + plural(n, 'envio', 'envios') + '?', 'O que já chegou desses arquivos será apagado do PC. Os concluídos continuam salvos.', 'Cancelar tudo'))
+      itens.forEach(cancelar);
   };
 
   // ---------- sessão ----------
@@ -416,19 +847,20 @@
     try {
       const r = await api('GET', '/estado');
       if (r.status !== 200) return;
+      autenticado = true;
       segundosRestantes = r.j.segundosRestantes;
       if (r.j.tamanhoBloco) BLOCO = r.j.tamanhoBloco;
-      const d = $('destino');
-      d.textContent = '';
-      d.append('Enviando para ', Object.assign(document.createElement('b'), { textContent: r.j.nomePc }),
-        ' · pasta ', Object.assign(document.createElement('b'), { textContent: r.j.pasta }));
+      $('nomePc').textContent = r.j.nomePc;
+      $('nomePasta').textContent = r.j.pasta;
       agendar();
+      return true;
     } catch (e) {
       if (!(e instanceof SessaoPerdida)) $('expira').textContent = 'Sem resposta do PC… tentando de novo';
+      return false;
     }
   }
-  consultarEstado();
-  setInterval(consultarEstado, 5000);
+
+  setInterval(() => { if (autenticado) consultarEstado(); }, 5000);
   setInterval(() => { if (segundosRestantes > 0) segundosRestantes--; agendar(); }, 1000);
 
   function sessaoPerdida(motivo) {
@@ -439,42 +871,45 @@
       if (ATIVOS.includes(i.st)) i.st = 'cancelado';
     }
     const textos = {
-      'expirada': ['Sessão encerrada', 'Esta sessão expirou (15 minutos sem atividade) ou foi encerrada no PC. O que não terminou de enviar foi descartado. Para continuar, escaneie o QR Code novo na tela do PC.'],
-      'outro-aparelho': ['Sessão em uso', 'Este QR Code já está sendo usado por outro aparelho. No PC, gere um QR Code novo.'],
-      'invalida': ['Link inválido', 'Este link não é de uma sessão válida. Escaneie o QR Code que está na tela do PC.'],
+      'expirada': ['Sessão encerrada', 'Esta sessão expirou (15 minutos sem atividade) ou foi encerrada no PC. O que não terminou de enviar foi descartado. Para continuar, escaneie o QR Code novo na tela do PC.', 'i-alerta'],
+      'tentativas': ['Sessão bloqueada', 'O código foi digitado errado vezes demais. Por segurança, esta sessão foi encerrada. Escaneie o QR Code novo na tela do PC e use o código novo.', 'i-cadeado'],
+      'outro-aparelho': ['Sessão em uso', 'Esta sessão já está sendo usada por outro aparelho. No PC, toque em "Gerar novo QR Code".', 'i-cadeado'],
+      'invalida': ['Link inválido', 'Este link não é de uma sessão válida. Escaneie o QR Code que está na tela do PC.', 'i-alerta'],
     };
     mostrarFim(...(textos[motivo] || textos.expirada));
   }
 
-  function mostrarFim(titulo, texto) {
-    $('principal').hidden = true;
-    $('rodape').hidden = true;
-    $('fim').hidden = false;
+  function mostrarFim(titulo, texto, icone) {
     $('fimTitulo').textContent = titulo;
     $('fimTexto').textContent = texto;
+    $('fimIcone').querySelector('use').setAttribute('href', '#' + (icone || 'i-ok'));
+    mostrarTela('telaFim');
   }
 
   $('encerrar').onclick = async () => {
     const pendentes = itens.filter(i => ATIVOS.includes(i.st)).length;
-    if (pendentes && !confirm('Há ' + pendentes + (pendentes === 1 ? ' envio não concluído' : ' envios não concluídos') + '. Encerrar mesmo assim? O que não terminou será descartado.')) return;
+    const ok = await perguntar('Encerrar a sessão?',
+      (pendentes ? 'Há ' + plural(pendentes, 'envio não concluído', 'envios não concluídos') + ', que será descartado. ' : '') +
+      'Este link deixa de funcionar e o PC gera um QR Code e um código novos.', 'Encerrar sessão');
+    if (!ok) return;
     const concluidos = itens.filter(i => i.st === 'concluido').length;
     for (const i of itens) { if (i.xhr) i.xhr.abort(); if (ATIVOS.includes(i.st)) i.st = 'cancelado'; }
     try { await api('POST', '/encerrar'); } catch { /* a sessão já tinha acabado */ }
     if (!sessaoAtiva) return;
     sessaoAtiva = false;
-    mostrarFim('Sessão encerrada',
-      (concluidos ? (concluidos === 1 ? '1 arquivo foi salvo' : concluidos + ' arquivos foram salvos') + ' no PC. ' : '') +
-      'Este link não funciona mais. Para enviar outros arquivos, escaneie o QR Code novo na tela do PC.');
+    mostrarFim('Pronto!',
+      (concluidos ? plural(concluidos, 'arquivo foi salvo', 'arquivos foram salvos') + ' no PC. ' : '') +
+      'Este link não funciona mais. Para enviar outros arquivos, escaneie o QR Code novo na tela do PC.', 'i-ok');
   };
 
   // ---------- seleção e arrastar ----------
-  $('arquivos').addEventListener('change', e => { adicionar([...e.target.files]); e.target.value = ''; });
-  const zona = $('zona');
-  addEventListener('dragover', e => { e.preventDefault(); zona.classList.add('sobre'); });
-  addEventListener('dragleave', e => { if (!e.relatedTarget) zona.classList.remove('sobre'); });
+  for (const id of ['midias', 'arquivos'])
+    $(id).addEventListener('change', e => { adicionar([...e.target.files]); e.target.value = ''; });
+  addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('arrastando'); });
+  addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('arrastando'); });
   addEventListener('drop', e => {
     e.preventDefault();
-    zona.classList.remove('sobre');
+    document.body.classList.remove('arrastando');
     if (e.dataTransfer && e.dataTransfer.files.length) adicionar([...e.dataTransfer.files]);
   });
   addEventListener('beforeunload', e => {
@@ -493,16 +928,14 @@
   }
   document.addEventListener('visibilitychange', () => { agendado = false; agendar(); });
 
-  const SELOS = { fila: 'Na fila', enviando: '', pausado: 'Pausado', concluido: 'Concluído', cancelado: 'Cancelado', erro: 'Falhou' };
-
   function desenhar() {
     const enviandoAgora = itens.some(i => i.st === 'enviando');
     let total = 0, feito = 0, restanteAtivo = 0, concluidos = 0, validos = 0;
 
     for (const i of itens) {
       const tam = i.file.size;
-      const atual = Math.min(tam, i.recebido + i.emVoo);
-      const pct = tam ? Math.floor(atual / tam * 100) : (i.st === 'concluido' ? 100 : 0);
+      const atual = i.st === 'concluido' ? tam : Math.min(tam, i.recebido + i.emVoo);
+      const pct = i.st === 'concluido' ? 100 : tam ? Math.floor(atual / tam * 100) : 0;
       if (i.st !== 'cancelado') {
         validos++;
         total += tam;
@@ -512,56 +945,83 @@
       if (i.st === 'concluido') concluidos++;
 
       const el = i.el;
-      el.dataset.st = i.st;
-      el.querySelector('.ipct').textContent = (i.st === 'concluido' ? 100 : pct) + '%';
-      el.querySelector('.barra i').style.width = (i.st === 'concluido' ? 100 : pct) + '%';
+      if (el.getAttribute('data-st') !== i.st) el.setAttribute('data-st', i.st);
+      el.querySelector('.pct').textContent = i.st === 'cancelado' || i.st === 'erro' ? '' : pct + '%';
+      el.querySelector('.barra i').style.width = pct + '%';
 
       let det;
       if (i.st === 'enviando') {
         det = bytes(atual) + ' de ' + bytes(tam);
-        if (i.reconectando) det += ' · reconectando…';
-        else if (velocidade > 0) det += ' · ' + bytes(velocidade) + '/s · ≈ ' + tempo((tam - atual) / velocidade);
+        if (i.reconectando) det = 'Reconectando…';
+        else if (velocidade > 0) det += ' · ≈ ' + tempo((tam - atual) / velocidade);
       } else if (i.st === 'concluido') {
-        det = bytes(tam) + (i.nomeFinal && i.nomeFinal !== i.file.name ? ' · salvo como ' + i.nomeFinal : ' · salvo no PC');
+        det = i.nomeFinal && i.nomeFinal !== i.file.name ? 'Salvo como ' + i.nomeFinal : 'Salvo no PC · ' + bytes(tam);
       } else if (i.st === 'erro') {
         det = i.erro;
       } else if (i.st === 'cancelado') {
         det = 'Cancelado';
+      } else if (i.st === 'pausado') {
+        det = 'Pausado · ' + bytes(atual) + ' de ' + bytes(tam);
       } else {
-        det = bytes(atual) + ' de ' + bytes(tam);
+        det = 'Na fila · ' + bytes(tam);
       }
-      el.querySelector('.det').textContent = det;
-      el.querySelector('.selo').textContent = SELOS[i.st];
-      el.querySelector('.selo').hidden = !SELOS[i.st] || i.st === 'pausado' || i.st === 'fila';
+      el.querySelector('.d1').textContent = det;
       el.querySelector('[data-acao=pausar]').hidden = !(i.st === 'enviando' || i.st === 'fila');
-      el.querySelector('[data-acao=retomar]').hidden = !(i.st === 'pausado' || i.st === 'erro');
-      el.querySelector('[data-acao=retomar]').textContent = i.st === 'erro' ? 'Tentar de novo' : 'Retomar';
+      const ret = el.querySelector('[data-acao=retomar]');
+      ret.hidden = !(i.st === 'pausado' || i.st === 'erro');
+      ret.setAttribute('aria-label', i.st === 'erro' ? 'Tentar de novo' : 'Retomar');
+      ret.querySelector('use').setAttribute('href', i.st === 'erro' ? '#i-repetir' : '#i-play');
       el.querySelector('[data-acao=cancelar]').hidden = !ATIVOS.includes(i.st);
+      el.querySelector('.selo').hidden = i.st !== 'concluido';
     }
+
+    const tem = itens.length > 0;
+    $('vazio').hidden = tem;
+    $('topoLista').hidden = !tem;
+    $('limpar').hidden = !itens.some(i => i.st === 'concluido' || i.st === 'cancelado');
+    $('resumo').hidden = !tem;
+    $('painel').classList.toggle('sem-envios', !tem);
+    $('faixaTela').hidden = !enviandoAgora;
 
     const pctTotal = total ? Math.floor(feito / total * 100) : (validos && concluidos === validos ? 100 : 0);
     $('rPct').textContent = pctTotal + '%';
     $('rBarra').style.width = pctTotal + '%';
-    $('rQtd').textContent = concluidos + ' de ' + validos + (validos === 1 ? ' arquivo' : ' arquivos');
+    $('rQtd').textContent = concluidos + ' de ' + plural(validos, 'arquivo', 'arquivos');
 
     let det = bytes(feito) + ' de ' + bytes(total);
     if (enviandoAgora && velocidade > 0) det += ' · ' + bytes(velocidade) + '/s · ≈ ' + tempo(restanteAtivo / velocidade) + ' restantes';
-    else if (validos && concluidos === validos) det += ' · tudo enviado';
+    else if (validos && concluidos === validos) det += ' · tudo enviado ✓';
     else if (itens.some(i => i.st === 'pausado') && !enviandoAgora) det += ' · pausado';
     $('rDet').textContent = det;
 
     const temPausaveis = itens.some(i => i.st === 'enviando' || i.st === 'fila');
     const temRetomaveis = itens.some(i => i.st === 'pausado' || i.st === 'erro');
+    const temAtivos = itens.some(i => ATIVOS.includes(i.st));
     $('pausarTudo').hidden = !temPausaveis;
-    $('retomarTudo').hidden = !temRetomaveis;
-    $('cancelarTudo').hidden = !itens.some(i => ATIVOS.includes(i.st));
+    $('retomarTudo').hidden = !temRetomaveis || temPausaveis;
+    $('cancelarTudo').hidden = !temAtivos;
+    $('resumo').querySelector('.botoes').hidden = !temAtivos;
 
     if (sessaoAtiva && segundosRestantes !== null) {
       $('expira').textContent = enviandoAgora
-        ? 'Sessão ativa · enviando'
-        : 'Sem atividade, a sessão encerra em ' + relogio(segundosRestantes);
+        ? 'Enviando… mantenha a tela aberta'
+        : 'Parado, a sessão encerra em ' + relogio(segundosRestantes);
     }
   }
+
+  // ---------- início ----------
+  (async () => {
+    try {
+      const r = await fetch(API + '/estado', { cache: 'no-store', credentials: 'same-origin' });
+      let j = {};
+      try { j = await r.json(); } catch { /* sem corpo */ }
+      if (r.status === 401) { desenharCasas(); mostrarTela('telaCodigo'); setTimeout(() => campo.focus(), 100); return; }
+      verificarSessao(r.status, j);
+      if (r.ok) { await consultarEstado(); mostrarTela('telaPrincipal'); }
+    } catch (e) {
+      if (!(e instanceof SessaoPerdida)) mostrarFim('Sem conexão com o PC', 'Confira se o celular está no mesmo Wi-Fi do PC e se o programa continua aberto.', 'i-alerta');
+    }
+  })();
 })();
 </script>
 </body>

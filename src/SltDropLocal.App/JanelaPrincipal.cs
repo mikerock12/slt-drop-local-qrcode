@@ -35,6 +35,7 @@ internal sealed class JanelaPrincipal : Form
 
     private readonly PictureBox _qr = new();
     private readonly Label _qrAviso = new();
+    private readonly Label _codigo = new();
     private readonly TextBox _url = new();
     private readonly Label _conexao = new();
     private readonly Label _expiracao = new();
@@ -47,6 +48,11 @@ internal sealed class JanelaPrincipal : Form
 
     private bool _servidorPronto;
     private string? _urlAtual;
+    private string? _conteudoQr;
+    private bool _qrDoCodigo;
+    private readonly Label _tituloQr = new();
+    private readonly Panel _molduraQr = new();
+    private Button _botaoQrCodigo = null!;
     private string? _mensagemTroca;
     private DateTime _mensagemTrocaAte;
     private bool _fechando;
@@ -55,7 +61,10 @@ internal sealed class JanelaPrincipal : Form
     {
         _opcoes = opcoes;
         _config = config;
-        _sessoes = new GerenciadorDeSessoes(limiteInatividade: opcoes.Inatividade);
+        // O histórico em %APPDATA% garante que um código de acesso nunca se repita, nem entre execuções.
+        var historico = new HistoricoDeCodigos(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Program.NomeApp, "codigos-usados.txt"));
+        _sessoes = new GerenciadorDeSessoes(limiteInatividade: opcoes.Inatividade, historico: historico);
         _envios = new GerenciadorDeEnvios(pasta);
         _servidor = new ServidorDrop(_sessoes, _envios, new OpcoesServidor { PortaPreferida = opcoes.Porta ?? 8770 });
         _sessoes.SessaoTrocada += AoTrocarSessao;
@@ -82,8 +91,8 @@ internal sealed class JanelaPrincipal : Form
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoScaleDimensions = new SizeF(96f, 96f);
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(1020, 640);
-        MinimumSize = new Size(900, 600);
+        ClientSize = new Size(1020, 720);
+        MinimumSize = new Size(900, 680);
 
         var raiz = new TableLayoutPanel
         {
@@ -118,17 +127,28 @@ internal sealed class JanelaPrincipal : Form
 
     private Control MontarColunaQr()
     {
-        var coluna = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 6, BackColor = Cartao, Padding = new Padding(18), Margin = new Padding(0, 0, 14, 0) };
+        var coluna = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7, BackColor = Cartao, Padding = new Padding(18), Margin = new Padding(0, 0, 14, 0) };
         coluna.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         coluna.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         coluna.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         coluna.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         coluna.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         coluna.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        coluna.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-        coluna.Controls.Add(new Label { Text = "Aponte a câmera do celular para o QR Code", AutoSize = true, Font = new Font("Segoe UI Semibold", 11f), ForeColor = Texto, Margin = new Padding(0, 0, 0, 10) });
+        _tituloQr.AutoSize = true;
+        _tituloQr.MaximumSize = new Size(360, 0);
+        _tituloQr.Font = new Font("Segoe UI Semibold", 11f);
+        _tituloQr.ForeColor = Texto;
+        _tituloQr.Margin = new Padding(0, 0, 0, 10);
+        _tituloQr.Text = "Aponte a câmera do celular para o QR Code";
+        coluna.Controls.Add(_tituloQr);
 
-        var moldura = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Padding = new Padding(10), Margin = new Padding(0, 0, 0, 12) };
+        var moldura = _molduraQr;
+        moldura.Dock = DockStyle.Fill;
+        moldura.BackColor = Color.White;
+        moldura.Padding = new Padding(10);
+        moldura.Margin = new Padding(0, 0, 0, 12);
         _qr.Dock = DockStyle.Fill;
         _qr.SizeMode = PictureBoxSizeMode.Zoom;
         _qr.BackColor = Color.White;
@@ -139,6 +159,27 @@ internal sealed class JanelaPrincipal : Form
         moldura.Controls.Add(_qr);
         moldura.Controls.Add(_qrAviso);
         coluna.Controls.Add(moldura);
+
+        // O código de acesso: só quem está vendo esta tela consegue liberar a página no celular.
+        var cartaoCodigo = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, BackColor = Fundo, Padding = new Padding(12, 8, 12, 8), Margin = new Padding(0, 0, 0, 10) };
+        cartaoCodigo.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        cartaoCodigo.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        var tituloCodigo = new Label { Text = "Código de acesso — digite no celular ou leia o QR", AutoSize = true, ForeColor = Suave, Margin = new Padding(0) };
+        cartaoCodigo.Controls.Add(tituloCodigo, 0, 0);
+        cartaoCodigo.SetColumnSpan(tituloCodigo, 2);
+        _codigo.AutoSize = true;
+        // Monoespaçada: cada caractere com a mesma largura e forma inconfundível.
+        _codigo.Font = new Font("Consolas", 23f, FontStyle.Bold);
+        _codigo.ForeColor = Laranja;
+        _codigo.Margin = new Padding(0, 2, 0, 0);
+        _codigo.UseMnemonic = false;
+        cartaoCodigo.Controls.Add(_codigo, 0, 1);
+        _botaoQrCodigo = Botao("Mostrar como QR");
+        _botaoQrCodigo.Anchor = AnchorStyles.Right;
+        _botaoQrCodigo.Margin = new Padding(8, 4, 0, 0);
+        _botaoQrCodigo.Click += (_, _) => AlternarQrDoCodigo(!_qrDoCodigo);
+        cartaoCodigo.Controls.Add(_botaoQrCodigo, 1, 1);
+        coluna.Controls.Add(cartaoCodigo);
 
         var linhaUrl = new TableLayoutPanel { Dock = DockStyle.Top, ColumnCount = 2, AutoSize = true, Margin = new Padding(0, 0, 0, 8) };
         linhaUrl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -158,6 +199,7 @@ internal sealed class JanelaPrincipal : Form
         coluna.Controls.Add(linhaUrl);
 
         _conexao.AutoSize = true;
+        _conexao.MaximumSize = new Size(360, 0);
         _conexao.Font = new Font("Segoe UI Semibold", 10f);
         _conexao.Margin = new Padding(0, 2, 0, 2);
         coluna.Controls.Add(_conexao);
@@ -400,9 +442,11 @@ internal sealed class JanelaPrincipal : Form
                 MotivoEncerramento.Inatividade => "A sessão anterior expirou por inatividade. QR Code novo gerado.",
                 MotivoEncerramento.EncerradaNoCelular => "A sessão foi encerrada no celular. QR Code novo gerado.",
                 MotivoEncerramento.PastaAlterada => "Pasta trocada. QR Code novo gerado.",
+                MotivoEncerramento.TentativasEsgotadas => $"Código digitado errado {GerenciadorDeSessoes.MaxTentativas} vezes: sessão encerrada por segurança. QR Code e código novos gerados.",
                 _ => "QR Code novo gerado. O anterior não funciona mais.",
             };
             _mensagemTrocaAte = DateTime.Now.AddSeconds(20);
+            _qrDoCodigo = false;
             AtualizarQr();
         });
     }
@@ -445,6 +489,12 @@ internal sealed class JanelaPrincipal : Form
         _dica.SetToolTip(_pasta, _envios.PastaDestino);
     }
 
+    private void AlternarQrDoCodigo(bool mostrar)
+    {
+        _qrDoCodigo = mostrar;
+        AtualizarQr();
+    }
+
     private void AtualizarQr()
     {
         if (!_servidorPronto) return;
@@ -458,13 +508,25 @@ internal sealed class JanelaPrincipal : Form
             return;
         }
 
-        var url = _servidor.Endereco(endereco.Ip, _sessoes.Atual);
-        if (url == _urlAtual) return;
+        var sessao = _sessoes.Atual;
+        var url = _servidor.Endereco(endereco.Ip, sessao);
         _urlAtual = url;
-        _url.Text = url;
+        if (_url.Text != url) _url.Text = url;
+
+        // O QR do código traz só o código (com prefixo), nunca o link: quem ler
+        // apenas ele não chega à página.
+        var conteudo = _qrDoCodigo ? GerenciadorDeSessoes.PrefixoQrCodigo + sessao.CodigoAcesso : url;
+        _tituloQr.Text = _qrDoCodigo
+            ? "QR do código de acesso: na página do celular, toque em \"Ler com a câmera\""
+            : "Aponte a câmera do celular para o QR Code";
+        _tituloQr.ForeColor = _qrDoCodigo ? Laranja : Texto;
+        _molduraQr.BackColor = _qrDoCodigo ? Laranja : Color.White;
+        _botaoQrCodigo.Text = _qrDoCodigo ? "Mostrar o link" : "Mostrar como QR";
+        if (conteudo == _conteudoQr) return;
+        _conteudoQr = conteudo;
         var antiga = _qr.Image;
         // Cópia em Bitmap: uma Image lida de stream exige o stream aberto enquanto existir.
-        using (var png = new MemoryStream(GeradorDeQr.Png(url)))
+        using (var png = new MemoryStream(GeradorDeQr.Png(conteudo)))
         using (var lida = Image.FromStream(png))
             _qr.Image = new Bitmap(lida);
         antiga?.Dispose();
@@ -477,16 +539,36 @@ internal sealed class JanelaPrincipal : Form
     {
         var sessao = _sessoes.Atual;
         if (_urlAtual is not null && !_urlAtual.EndsWith(sessao.Token, StringComparison.Ordinal)) AtualizarQr();
+        // Depois que o celular entrou, o QR do código não tem mais serventia.
+        if (_qrDoCodigo && sessao.Autenticada) AlternarQrDoCodigo(false);
 
-        if (_mensagemTroca is not null && DateTime.Now < _mensagemTrocaAte)
+        var codigo = $"{sessao.CodigoAcesso[..4]} {sessao.CodigoAcesso[4..]}";
+        if (_codigo.Text != codigo)
+        {
+            _codigo.Text = codigo;
+            _codigo.AccessibleName = "Código de acesso " + codigo;
+        }
+
+        if (sessao.Aparelho is { } aparelho)
+        {
+            _conexao.Text = $"● Celular conectado ({aparelho})";
+            _conexao.ForeColor = Verde;
+        }
+        else if (sessao.TentativasErradas > 0)
+        {
+            var restam = GerenciadorDeSessoes.MaxTentativas - sessao.TentativasErradas;
+            _conexao.Text = $"● Código incorreto digitado no celular ({restam} {(restam == 1 ? "tentativa restante" : "tentativas restantes")})";
+            _conexao.ForeColor = Amarelo;
+        }
+        else if (_mensagemTroca is not null && DateTime.Now < _mensagemTrocaAte && !sessao.PaginaAberta)
         {
             _conexao.Text = _mensagemTroca;
             _conexao.ForeColor = Laranja;
         }
-        else if (sessao.Aparelho is { } aparelho)
+        else if (sessao.PaginaAberta)
         {
-            _conexao.Text = $"● Celular conectado ({aparelho})";
-            _conexao.ForeColor = Verde;
+            _conexao.Text = "● Link aberto no celular — aguardando o código de acesso";
+            _conexao.ForeColor = Amarelo;
         }
         else
         {
