@@ -8,15 +8,21 @@ COMO USAR
 1. Abra o SLT Drop Local QRCode e escolha a pasta onde os arquivos vão ficar.
 2. Conecte o celular ao mesmo Wi-Fi (ou roteador) do PC.
 3. Aponte a câmera do celular para o QR Code da tela e toque no link.
-4. Toque em "Escolher arquivos". Acompanhe a porcentagem e o tempo estimado;
-   cada arquivo pode ser pausado, retomado ou cancelado.
-5. Ao terminar, toque em "Encerrar sessão". O PC gera outro QR Code na hora.
+4. Digite no celular o código de acesso de 8 caracteres que aparece no PC
+   (maiúsculas e minúsculas fazem diferença).
+   Para não digitar: no PC, clique em "Mostrar como QR"; no celular, toque em
+   "Ler com a câmera" e fotografe a tela do PC.
+5. Toque em "Fotos e vídeos" ou "Arquivos". Acompanhe a porcentagem e o tempo
+   restante; cada arquivo pode ser pausado, retomado ou cancelado.
+6. Ao terminar, toque em "Encerrar". O PC gera outro QR Code e outro código.
 
 SEGURANÇA
-- Cada QR Code tem um código exclusivo e vale para uma sessão só. Encerrada a
-  sessão (pelo botão do celular, pelo botão do PC ou depois de 15 minutos sem
+- Cada sessão tem um link exclusivo (QR Code) e um código de acesso que só
+  aparece na tela do PC. Os códigos nunca se repetem.
+- Errar o código 5 vezes encerra a sessão: o PC gera link e código novos.
+- A sessão fica presa ao primeiro celular que acertar o código.
+- Encerrada a sessão (pelo celular, pelo PC ou depois de 15 minutos sem
   atividade), aquele link nunca mais funciona.
-- A sessão fica presa ao primeiro celular que abrir o link.
 - Nada passa pela internet: o envio vai direto do celular para o PC.
 - O que não terminou de enviar quando a sessão acaba é apagado do PC.
 

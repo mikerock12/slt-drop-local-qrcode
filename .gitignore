@@ -7,3 +7,6 @@ TestResults/
 # Saída do scripts\gerar-instalador.ps1
 publish/
 entrega/
+
+# Pasta de demonstração usada para os prints
+demo/

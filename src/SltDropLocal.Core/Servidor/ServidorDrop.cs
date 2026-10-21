@@ -27,8 +27,11 @@ public sealed class OpcoesServidor
 
 /// <summary>
 /// O servidor HTTP da rede local. Tudo fica sob /s/{token}/: sem o token da sessão
-/// atual não há página nem API. O celular usa:
-///   GET    /s/{t}                 página de envio
+/// atual não há página nem API. A página abre só com o token, mas a API exige
+/// antes o código de acesso mostrado no PC (que devolve uma chave em cookie).
+/// O celular usa:
+///   GET    /s/{t}                 página de envio (pede o código)
+///   POST   /s/{t}/api/acesso      confere o código {codigo}; 5 erros encerram a sessão
 ///   GET    /s/{t}/api/estado      tempo até expirar, nome do PC, tamanho do bloco
 ///   POST   /s/{t}/api/envios      começa um arquivo {nome, tamanho}
 ///   GET    /s/{t}/api/envios/{id} de onde continuar
@@ -39,11 +42,14 @@ public sealed class OpcoesServidor
 /// </summary>
 public sealed class ServidorDrop : IAsyncDisposable
 {
+    private const string NomeCookie = "sltdrop_chave";
+
     private readonly GerenciadorDeSessoes _sessoes;
     private readonly GerenciadorDeEnvios _envios;
     private readonly OpcoesServidor _opcoes;
     private readonly string _pagina = LerRecurso("SltDropLocal.pagina.html");
     private readonly string _modeloAviso = LerRecurso("SltDropLocal.aviso.html");
+    private readonly string _jsQr = LerRecurso("SltDropLocal.jsQR.js");
     private WebApplication? _app;
 
     public ServidorDrop(GerenciadorDeSessoes sessoes, GerenciadorDeEnvios envios, OpcoesServidor? opcoes = null)
@@ -132,9 +138,17 @@ public sealed class ServidorDrop : IAsyncDisposable
         app.MapGet("/", () => Aviso(StatusCodes.Status200OK, "SLT Drop Local QRCode",
             "Para enviar arquivos, escaneie o QR Code que aparece na tela do PC."));
         app.MapGet("/favicon.ico", () => Results.NoContent());
+        // Biblioteca pública (jsQR) que lê o QR do código de acesso na foto. Não tem
+        // nada da sessão, então pode ficar em cache no celular.
+        app.MapGet("/recursos/jsqr.js", (HttpContext ctx) =>
+        {
+            ctx.Response.Headers.CacheControl = "public, max-age=86400";
+            return Results.Content(_jsQr, "text/javascript; charset=utf-8");
+        });
         app.MapGet("/s/{token}", Pagina); // também atende "/s/{token}/"
 
         var api = app.MapGroup("/s/{token}/api");
+        api.MapPost("/acesso", VerificarCodigo);
         api.MapGet("/estado", Estado);
         api.MapPost("/envios", CriarEnvio);
         api.MapGet("/envios/{id}", ConsultarEnvio);
@@ -147,7 +161,7 @@ public sealed class ServidorDrop : IAsyncDisposable
 
     private IResult Pagina(string token, HttpContext ctx)
     {
-        switch (_sessoes.Autorizar(token, ctx.Connection.RemoteIpAddress, reivindicar: true, out var sessao))
+        switch (_sessoes.AbrirPagina(token, ctx.Connection.RemoteIpAddress, out var sessao))
         {
             case Acesso.Permitido:
                 _sessoes.RegistrarAtividade(sessao!);
@@ -166,7 +180,7 @@ public sealed class ServidorDrop : IAsyncDisposable
 
     private IResult Estado(string token, HttpContext ctx)
     {
-        if (Negado(token, ctx, reivindicar: false, out var sessao) is { } negado) return negado;
+        if (Negado(token, ctx, out var sessao) is { } negado) return negado;
         return Results.Json(new
         {
             ativa = true,
@@ -184,7 +198,7 @@ public sealed class ServidorDrop : IAsyncDisposable
 
     private IResult CriarEnvio(string token, NovoEnvio pedido, HttpContext ctx)
     {
-        if (Negado(token, ctx, reivindicar: true, out var sessao) is { } negado) return negado;
+        if (Negado(token, ctx, out var sessao) is { } negado) return negado;
         _sessoes.RegistrarAtividade(sessao);
         if (pedido.Tamanho < 0) return Erro(StatusCodes.Status400BadRequest, "tamanho");
 
@@ -205,14 +219,14 @@ public sealed class ServidorDrop : IAsyncDisposable
 
     private IResult ConsultarEnvio(string token, string id, HttpContext ctx)
     {
-        if (Negado(token, ctx, reivindicar: false, out var sessao) is { } negado) return negado;
+        if (Negado(token, ctx, out var sessao) is { } negado) return negado;
         var envio = _envios.Obter(sessao, id);
         return envio is null ? Erro(StatusCodes.Status404NotFound, "envio") : Results.Json(DescreverEnvio(envio));
     }
 
     private async Task<IResult> GravarBloco(string token, string id, long posicao, HttpContext ctx)
     {
-        if (Negado(token, ctx, reivindicar: true, out var sessao) is { } negado) return negado;
+        if (Negado(token, ctx, out var sessao) is { } negado) return negado;
         _sessoes.RegistrarAtividade(sessao);
         var envio = _envios.Obter(sessao, id);
         if (envio is null) return Erro(StatusCodes.Status404NotFound, "envio");
@@ -236,7 +250,7 @@ public sealed class ServidorDrop : IAsyncDisposable
 
     private IResult PausarEnvio(string token, string id, HttpContext ctx)
     {
-        if (Negado(token, ctx, reivindicar: true, out var sessao) is { } negado) return negado;
+        if (Negado(token, ctx, out var sessao) is { } negado) return negado;
         _sessoes.RegistrarAtividade(sessao);
         _envios.Pausar(sessao, id);
         return Results.Json(new { ok = true });
@@ -244,27 +258,60 @@ public sealed class ServidorDrop : IAsyncDisposable
 
     private IResult CancelarEnvio(string token, string id, HttpContext ctx)
     {
-        if (Negado(token, ctx, reivindicar: true, out var sessao) is { } negado) return negado;
+        if (Negado(token, ctx, out var sessao) is { } negado) return negado;
         _sessoes.RegistrarAtividade(sessao);
         return Results.Json(new { cancelado = _envios.Cancelar(sessao, id) });
     }
 
     private IResult Encerrar(string token, HttpContext ctx)
     {
-        if (Negado(token, ctx, reivindicar: true, out var sessao) is { } negado) return negado;
+        if (Negado(token, ctx, out var sessao) is { } negado) return negado;
         _sessoes.Encerrar(MotivoEncerramento.EncerradaNoCelular, somenteSe: sessao);
         return Results.Json(new { encerrada = true });
     }
 
-    private IResult? Negado(string token, HttpContext ctx, bool reivindicar, out Sessao sessao)
+    public sealed record PedidoAcesso(string? Codigo);
+
+    private IResult VerificarCodigo(string token, PedidoAcesso pedido, HttpContext ctx)
     {
-        var acesso = _sessoes.Autorizar(token, ctx.Connection.RemoteIpAddress, reivindicar, out var s);
+        var r = _sessoes.VerificarCodigo(token, ctx.Connection.RemoteIpAddress, pedido.Codigo);
+        switch (r.Situacao)
+        {
+            case SituacaoCodigo.Aceito:
+                // A chave vai em cookie HttpOnly, restrito ao caminho desta sessão:
+                // o JavaScript da página nunca a vê e ela some com o navegador.
+                ctx.Response.Cookies.Append(NomeCookie, r.Chave!, new CookieOptions
+                {
+                    HttpOnly = true,
+                    SameSite = SameSiteMode.Strict,
+                    Path = "/s/" + token,
+                    IsEssential = true,
+                });
+                return Results.Json(new { ok = true });
+            case SituacaoCodigo.Incorreto:
+                return Results.Json(new { erro = "codigo-incorreto", restantes = r.Restantes }, statusCode: StatusCodes.Status401Unauthorized);
+            case SituacaoCodigo.Esgotado:
+                return Erro(StatusCodes.Status410Gone, "tentativas");
+            case SituacaoCodigo.Expirada:
+                return Erro(StatusCodes.Status410Gone, "expirada");
+            case SituacaoCodigo.OutroAparelho:
+                return Erro(StatusCodes.Status403Forbidden, "outro-aparelho");
+            default:
+                return Erro(StatusCodes.Status404NotFound, "invalida");
+        }
+    }
+
+    private IResult? Negado(string token, HttpContext ctx, out Sessao sessao)
+    {
+        var acesso = _sessoes.Autorizar(token, ctx.Connection.RemoteIpAddress,
+            ctx.Request.Cookies[NomeCookie], out var s);
         sessao = s!;
         return acesso switch
         {
             Acesso.Permitido => null,
             Acesso.Expirada => Erro(StatusCodes.Status410Gone, "expirada"),
             Acesso.OutroAparelho => Erro(StatusCodes.Status403Forbidden, "outro-aparelho"),
+            Acesso.CodigoNecessario => Erro(StatusCodes.Status401Unauthorized, "codigo"),
             _ => Erro(StatusCodes.Status404NotFound, "invalida"),
         };
     }

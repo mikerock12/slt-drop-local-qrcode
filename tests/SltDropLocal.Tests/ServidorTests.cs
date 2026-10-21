@@ -33,7 +33,17 @@ public sealed class ServidorTests : IAsyncLifetime
         });
         await _servidor.IniciarAsync();
         _http = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{_servidor.Porta}") };
+        await Entrar();
     }
+
+    /// <summary>Digita o código de acesso da sessão atual, como o celular faz; a chave fica no cookie do cliente.</summary>
+    private async Task Entrar(HttpClient? cliente = null)
+    {
+        var r = await (cliente ?? _http).PostAsJsonAsync(Api("/acesso"), new { codigo = _sessoes.Atual.CodigoAcesso });
+        Assert.Equal(HttpStatusCode.OK, r.StatusCode);
+    }
+
+    private string CodigoErrado() => _sessoes.Atual.CodigoAcesso == "Ab3$Cd4%" ? "Zx9!Yw8@" : "Ab3$Cd4%";
 
     public async Task DisposeAsync()
     {
@@ -258,7 +268,9 @@ public sealed class ServidorTests : IAsyncLifetime
 
         Assert.False(Directory.Exists(Path.Combine(_pasta, GerenciadorDeEnvios.PastaParciais)));
         Assert.Equal(SituacaoEnvio.Cancelado, _envios.Lista().Single().Situacao);
-        // A sessão nova funciona.
+        // A sessão nova funciona, depois do código novo.
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _http.GetAsync(Api("/estado"))).StatusCode);
+        await Entrar();
         Assert.Equal(HttpStatusCode.OK, (await _http.GetAsync(Api("/estado"))).StatusCode);
     }
 
@@ -287,6 +299,68 @@ public sealed class ServidorTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Sem_o_codigo_a_pagina_abre_mas_a_api_nao()
+    {
+        using var semCodigo = new HttpClient { BaseAddress = _http.BaseAddress };
+        Assert.Equal(HttpStatusCode.OK, (await semCodigo.GetAsync($"/s/{_sessoes.Atual.Token}")).StatusCode);
+
+        foreach (var r in new[]
+        {
+            await semCodigo.GetAsync(Api("/estado")),
+            await semCodigo.PostAsJsonAsync(Api("/envios"), new { nome = "x", tamanho = 1 }),
+            await semCodigo.PostAsync(Api("/encerrar"), null),
+        })
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, r.StatusCode);
+            Assert.Equal("codigo", (await Json(r)).GetProperty("erro").GetString());
+        }
+        Assert.True(_sessoes.Atual.Ativa);
+    }
+
+    [Fact]
+    public async Task Chave_vai_em_cookie_httponly_restrito_a_sessao()
+    {
+        using var cliente = new HttpClient(new HttpClientHandler { UseCookies = false }) { BaseAddress = _http.BaseAddress };
+        var r = await cliente.PostAsJsonAsync(Api("/acesso"), new { codigo = _sessoes.Atual.CodigoAcesso });
+        var cookie = r.Headers.GetValues("Set-Cookie").Single();
+        Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("samesite=strict", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains($"path=/s/{_sessoes.Atual.Token}", cookie, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Codigo_errado_informa_tentativas_e_a_quinta_encerra_a_sessao()
+    {
+        var token = _sessoes.Atual.Token;
+        for (var restantes = 4; restantes >= 1; restantes--)
+        {
+            var r = await _http.PostAsJsonAsync(Api("/acesso"), new { codigo = CodigoErrado() });
+            Assert.Equal(HttpStatusCode.Unauthorized, r.StatusCode);
+            var j = await Json(r);
+            Assert.Equal("codigo-incorreto", j.GetProperty("erro").GetString());
+            Assert.Equal(restantes, j.GetProperty("restantes").GetInt32());
+        }
+
+        var ultima = await _http.PostAsJsonAsync($"/s/{token}/api/acesso", new { codigo = CodigoErrado() });
+        Assert.Equal(HttpStatusCode.Gone, ultima.StatusCode);
+        Assert.Equal("tentativas", (await Json(ultima)).GetProperty("erro").GetString());
+        Assert.NotEqual(token, _sessoes.Atual.Token);
+        // A chave que o cliente já tinha também morreu com a sessão.
+        Assert.Equal(HttpStatusCode.Gone, (await _http.GetAsync($"/s/{token}/api/estado")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Leitor_de_qr_eh_servido_sem_token_e_com_cache()
+    {
+        using var semCodigo = new HttpClient { BaseAddress = _http.BaseAddress };
+        var r = await semCodigo.GetAsync("/recursos/jsqr.js");
+        Assert.Equal(HttpStatusCode.OK, r.StatusCode);
+        Assert.Equal("text/javascript", r.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("max-age", r.Headers.CacheControl?.ToString());
+        Assert.Contains("jsQR", await r.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task Link_inventado_da_404()
     {
         var r = await _http.GetAsync("/s/inventado");
@@ -297,8 +371,7 @@ public sealed class ServidorTests : IAsyncLifetime
     [Fact]
     public async Task Outro_aparelho_nao_usa_a_sessao_de_quem_chegou_primeiro()
     {
-        // O primeiro aparelho (127.0.0.1) abre a página e fica dono da sessão.
-        Assert.Equal(HttpStatusCode.OK, (await _http.GetAsync($"/s/{_sessoes.Atual.Token}")).StatusCode);
+        // O primeiro aparelho (127.0.0.1) já digitou o código e é o dono da sessão.
 
         // O "segundo aparelho" sai de 127.0.0.2.
         using var outro = new HttpClient(new SocketsHttpHandler
@@ -315,6 +388,9 @@ public sealed class ServidorTests : IAsyncLifetime
         var r = await outro.GetAsync($"/s/{_sessoes.Atual.Token}");
         Assert.Equal(HttpStatusCode.Forbidden, r.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await outro.PostAsJsonAsync(Api("/envios"), new { nome = "x", tamanho = 1 })).StatusCode);
+        // Nem sabendo o código o outro aparelho entra.
+        var codigo = await outro.PostAsJsonAsync(Api("/acesso"), new { codigo = _sessoes.Atual.CodigoAcesso });
+        Assert.Equal(HttpStatusCode.Forbidden, codigo.StatusCode);
     }
 
     /// <summary>
