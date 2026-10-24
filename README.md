@@ -172,3 +172,8 @@ QRCoder (MIT), jsQR (Apache-2.0) e .NET (MIT). Detalhes em [THIRD-PARTY-NOTICES.
 ---
 
 <p align="center">Feito pela <b>Smells Like Tech</b></p>
+
+
+## Portal SLT
+
+[Recursos, demonstração e download atualizado](https://softwares.smellsliketech.com.br/apps/drop-local/). Cada merge em main publica automaticamente o instalador validado pelo CI. Este app também integra o workspace central SoftwaresSLT.
