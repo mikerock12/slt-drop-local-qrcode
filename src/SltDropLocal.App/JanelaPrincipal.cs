@@ -526,7 +526,7 @@ internal sealed class JanelaPrincipal : Form
         _conteudoQr = conteudo;
         var antiga = _qr.Image;
         // Cópia em Bitmap: uma Image lida de stream exige o stream aberto enquanto existir.
-        using (var png = new MemoryStream(GeradorDeQr.Png(conteudo)))
+        using (var png = new MemoryStream(GeradorDeQr.Png(conteudo, robusto: _qrDoCodigo)))
         using (var lida = Image.FromStream(png))
             _qr.Image = new Bitmap(lida);
         antiga?.Dispose();
